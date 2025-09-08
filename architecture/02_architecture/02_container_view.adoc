@@ -1,14 +1,13 @@
-=== Container View
+= Container View
 
-////
-
+== Overview
 [NOTE]
 ====
 This diagram shows the single container images and their interactions as they are used by the System under Development.
 ====
-////
-
-[plantuml, target=images/level2, format=svg]
+// tag::developer[]
+== Container Diagram
+[plantuml, format=png]
 ----
 @startuml
 !include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
@@ -52,19 +51,19 @@ Rel(node, hedera, "Broadcasts transaction", "Proprietary protocol")
 
 ----
 
-=== Description of Modules and Components
+== Description of Modules and Components
 
-==== Web Application
+=== Web Application
 
 [NOTE]
 Describe the design choices made for the web application. Framework (e.g. React, Angular) and other technical decisions. The features of the application are described elsewhere.
 
-==== API Gateway
+=== API Gateway
 
 [NOTE]
 Describe how the Web App interacts with the gateway, what the security or trust parameters are and other design choices.
 
-==== Other components
+=== Other components
 
 [NOTE]
 Describe why the components are required (e.g. Hexagonal architecture mandates separation of function and persistence) and what their main function is.

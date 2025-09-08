@@ -1,0 +1,40 @@
+= Testing Scope
+
+
+The testing team will execute validation of the changes that include but not limited to the following activities:
+
+* Integration
+
+
+* System Security
+
+
+* Authorization & Authentication
+
+
+== Test Platform
+* Website
+* Mobile App
+
+== Tools
+* Website & Mobile Manual Testing Tools: Test Link, MS Azure DevOps
+* Website Automation Test Tools: JMETER, Selenium & Python
+* Mobile Automation Testing Tools: Appium, Java and BrowserStack (Multiple devices)
+
+== Test Types
+* End-to-End Testing: Testing entire product from beginning to end to ensure the application flow with expected behaviours.
+* Functional Testing: Aligns & validate the system functional requirements / specifications.
+* Non-Functional Testing: Load & Performance Testing.
+
+== Performance Testing
+* Website Performance Testing Tools: JMETER
+** Up to max. 1000 concurrent users
+** Up to 95% Loading Performance
+
+== Product
+* All
+
+== Supported Mobile Devices
+* iOS 17+
+* Android 14+
+

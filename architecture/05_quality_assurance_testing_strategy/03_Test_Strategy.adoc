@@ -1,0 +1,31 @@
+= Testing Strategy
+
+[cols="1,3", options="header"]
+|===
+| Section | Details
+
+| 1. Test Strategy
+| 1.1 Automation / Manual Test Strategy +
+1.2 Test Schedule +
+1.3 Resource Planning
+
+| 2. Test Development
+| 2.1 Test Plans +
+2.2 Test Scripts +
+2.3 Test Data
+
+| 3. Test Execution
+| 3.1 Defects +
+3.2 Test Reports +
+3.3 Test Metrics (Traceability Matrix)
+
+| 4. Defect Management
+| 4.1 Bug Tracking +
+4.2 Bug Fixing +
+4.3 Bug Verification
+
+| 5. Delivery
+| 5.1 UAT +
+5.2 Installation Testing Environment +
+5.3 Requirements Verification
+|===

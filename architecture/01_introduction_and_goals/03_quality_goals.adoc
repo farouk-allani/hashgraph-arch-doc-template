@@ -3,7 +3,7 @@
 
 ////
 [NOTE]
-how will quality be measured in this project
+how will quality be measured in this project, also referred as Non-Functional requirements
 ////
 
 
@@ -13,5 +13,9 @@ how will quality be measured in this project
 |[[Q1]]Q1 |Performance |System responds within 1 second for 95% of requests
 |[[Q2]]Q2 |Security |Data encryption at rest and in transit, with regular security audits
 |[[Q3]]Q3 |Scalability |Support 10x growth in user base without major architectural changes
+|[[Q4]]Q4 |Accessibility |Support link:https://www.w3.org/WAI/standards-guidelines/wcag/[*WCAG*](Web Content Accessibility Guidelines) compliance
+|[[Q5]]Q5 |Maintainability |Design the system so it's easy to update, fix bugs or add new features without major rework or downtime. Codes vulnerability and complexity are removed regular basis.
+|[[Q6]]Q6 |Localization |The system must support multiple languages, regions, and cultural formats to serve a global user base
+|[[Q7]]Q7 |Compliance |System must comply with regulations such as GDPR/HIPA
 |===
 // end::developer[]
