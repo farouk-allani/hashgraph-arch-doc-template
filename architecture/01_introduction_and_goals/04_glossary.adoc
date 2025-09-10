@@ -16,5 +16,5 @@ The glossary explains terminology and allows to reference acronyms easily. Copy 
 
 ////
 to reference a TERM in the documentation, you have to use the following syntax
-<<../01_introduction_and_goals/06_glossary.adoc#DLT, DLT>>
+<<../01_introduction_and_goals/04_glossary.adoc#DLT, DLT>>
 ////

@@ -1,0 +1,25 @@
+= Technical Debt
+
+////
+[NOTE]
+Known shortcuts or deficiencies that exist today.
+////
+
+The following technical debt items represent known deficiencies in the current system implementation.
+They are acknowledged and planned for future resolution:
+
+
+[cols="1,1,4,4", id=Technical-Debt, options="header"]
+|===
+|ID |Severity |Description |Remediation
+|[[TD1]]TD1
+|High
+|The credentials stored directly in source
+|Move to secrets manager like Vault/KMS
+
+|[[TD2]]TD2
+|Low
+|Lack of automated test coverage, which may lead to regression bug
+|Increase the coverage as much as possible
+
+|===

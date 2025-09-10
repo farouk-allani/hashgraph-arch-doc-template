@@ -1,10 +1,54 @@
-== Deployment View
+= Deployment View
 
 [NOTE]
 ====
-This diagram shows how the system is deployed. Update it when changing the deployment architecture or moving to new infrastructure.
+This diagram shows how the system is deployed including the protocol details. Update it when changing the deployment architecture or moving to new infrastructure.
 
 It should contain the description about how the infrastructure is set up as well as how it is used in the CI/CD pipeline. Which tests are run in which environment, what causes a deployment to fail and the criteria for success.
 
+====
+
+== Branching Strategy
+[NOTE]
+====
 This is also the place to document the branching strategy and which branches are deployed to what environment
 ====
+
+=== Overview
+The branching strategy defines how source code is managed in Git to ensure stability, collaboration, and smooth release cycles.
+
+=== Branch Types
+
+[NOTE]
+====
+
+Branch type e.g
+
+* `main`
+* `develop`
+* `release`
+====
+
+=== Branch Names
+
+[NOTE]
+====
+Branch naming convention
+
+* `feature/login-authentication`
+* `feature/gateway`
+* `release/1.2.0`
+* `hotfix/1.2.1`
+====
+
+=== Branch wokflow
+
+[plantuml, format=png]
+----
+@startuml
+main -down-> release
+release -down-> develop
+develop -down-> feature
+main -down-> hotfix
+@enduml
+----

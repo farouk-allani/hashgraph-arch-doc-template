@@ -16,10 +16,10 @@ Update this matrix when adding new features or when making significant changes t
 |ID |Feature |Requierments |Quality Attributes |Arch. Decisions |Risks/Tech Debt
 |F1
 |When a user accesses the system, they need to securely authenticate, so that they can access their personalized data and functionalities and their information can be kept private.
-|<<02_requirements_overview.adoc#R1, Web3 Auth>>
-|<<03_quality_goals.adoc#Q2, Security>>
-|<<../04_architecture_decisions/adr-001-my-project.adoc#_adr_001_description_of_the_architecture_decision_record, Security Architecture>>
-|<<05_risks_tech-debt.adoc#R2, Key Recovery>>
+|<<./01_introduction_and_goals/02_requirements_overview.adoc#R1, Web3 Auth>>
+|<<./01_introduction_and_goals/03_quality_goals.adoc#Q2, Security>>
+|<<./04_architecture_decisions/adr-001-my-project.adoc#_adr_001_description_of_the_architecture_decision_record, Security Architecture>>
+|<<./06_risks_and_tech_debt/01_risks.adoc#R2, Key Recovery>>
 
 
 |===

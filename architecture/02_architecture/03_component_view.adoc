@@ -1,8 +1,14 @@
-=== [[components]] Component Diagram - Frontend
+= Component Diagram
+
+== Overview
+
+This document provides a component-level view (C3) of the Project, detailing the internal structure of the main containers and their interactions with external systems.
+
+== [[components]] Component Diagram - Frontend
 
 The purpose of the Application Admin FE is to manage the currently logged-in users data, subscriptions and API keys while the Dashboard Service FE allows the THA Admin the management of all users and provide him with an overview of the platforms usage.
 
-[plantuml, target=images/fe_component, format=svg]
+[plantuml, format=png]
 ----
 @startuml
 !include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
@@ -36,44 +42,44 @@ Rel(db_service_fe, db_be, "Sends request to")
 @enduml
 ----
 
-==== Login Operator
+=== Login Operator
 [NOTE]
 Describe what the component does using prose. The diagrams should be put in the runtime view
 
-==== API Key Generator
+=== API Key Generator
 [NOTE]
 Describe what the component does using prose. The diagrams should be put in the runtime view
 
-==== Account Manager
+=== Account Manager
 [NOTE]
 Describe what the component does using prose. The diagrams should be put in the runtime view
 
-==== Subscription Manager
+=== Subscription Manager
 [NOTE]
 Describe what the component does using prose. The diagrams should be put in the runtime view
 
-==== Billing Information
+=== Billing Information
 [NOTE]
 Describe what the component does using prose. The diagrams should be put in the runtime view
 
-==== Login Admin
+=== Login Admin
 [NOTE]
 Describe what the component does using prose. The diagrams should be put in the runtime view
 
-==== Admin Account Manager
+=== Admin Account Manager
 [NOTE]
 Describe what the component does using prose. The diagrams should be put in the runtime view
 
-==== Dashboard
+=== Dashboard
 [NOTE]
 Describe what the component does using prose. The diagrams should be put in the runtime view
 
-=== Component Diagram - Backend
+== Component Diagram - Backend
 
 The Application Backend takes the requests from both frontend containers. Additionally, it exposes endpoints that allow a technical user to send requests.
 The Dashboard Backend only serves the purposes of the Dashboard Service FE.
 
-[plantuml, target=images/be_components, format=svg]
+[plantuml, format=png]
 ----
 @startuml
 !include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
@@ -125,38 +131,38 @@ Rel(db_be, mtg_db, "Sends REST request to")
 @enduml
 ----
 
-==== API Key Generator
+=== API Key Generator
 [NOTE]
 Describe what the component does using prose. The diagrams should be put in the runtime view
 
-==== Transaction Gateway
+=== Transaction Gateway
 [NOTE]
 Describe what the component does using prose. The diagrams should be put in the runtime view
 
-==== Account Manager
+=== Account Manager
 [NOTE]
 Describe what the component does using prose. The diagrams should be put in the runtime view
 
-==== Subscription Manager
+=== Subscription Manager
 [NOTE]
 Describe what the component does using prose. The diagrams should be put in the runtime view
 
-==== Billing Service
+=== Billing Service
 [NOTE]
 Describe what the component does using prose. The diagrams should be put in the runtime view
 
-==== Dashboard
+=== Dashboard
 [NOTE]
 Describe what the component does using prose. The diagrams should be put in the runtime view
 
-==== Hashicorp Vault
+=== Hashicorp Vault
 [NOTE]
 Describe what the component does using prose. The diagrams should be put in the runtime view
 
-==== Application Database
+=== Application Database
 [NOTE]
 Describe what the component does using prose. The diagrams should be put in the runtime view
 
-==== Dashboard Database
+=== Dashboard Database
 [NOTE]
 Describe what the component does using prose. The diagrams should be put in the runtime view
