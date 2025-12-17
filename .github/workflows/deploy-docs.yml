@@ -26,16 +26,17 @@ jobs:
       - name: Build HTML Documentation
         run: |
           docker compose -f docker-compose-arch.yml up --no-recreate build-html
+          sudo chown -R $USER:$USER build-html
       
       # Step 3: Build PDF documentation using docker-compose
       - name: Build PDF Documentation
         run: |
           docker compose -f docker-compose-arch.yml up --no-recreate build-pdf
+          sudo chown -R $USER:$USER build-pdf
       
       # Step 4: Copy PDF to HTML directory for deployment
       - name: Prepare Deployment Files
         run: |
-          sudo chmod -R u+w build-html
           cp build-pdf/index.pdf build-html/
       
       # Step 5: Deploy to GitHub Pages
