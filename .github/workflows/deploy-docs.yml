@@ -35,6 +35,7 @@ jobs:
       # Step 4: Copy PDF to HTML directory for deployment
       - name: Prepare Deployment Files
         run: |
+          sudo chmod -R u+w build-html
           cp build-pdf/index.pdf build-html/
       
       # Step 5: Deploy to GitHub Pages
