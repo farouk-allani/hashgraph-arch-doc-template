@@ -10,11 +10,41 @@ The glossary explains terminology and allows to reference acronyms easily. Copy 
 |===
 |Term |Description
 
+|[[HTS]]HTS
+|Hedera Token Service - A native tokenization service on Hedera Hashgraph for creating and managing fungible and non-fungible tokens
+
 |[[DLT]]DLT
 |Decentralised Ledger Technology
+
+|[[JWT]]JWT
+|JSON Web Token - A compact, URL-safe means of representing claims to be transferred between two parties
+
+|[[MiddleDB]]Middle DB
+|Intermediate consolidated database that aggregates data from Enda Tamweel's T24 and Works systems, updated daily (J-1)
+
+|[[T24]]T24
+|Temenos T24 - Core banking system used by Enda Tamweel
+
+|[[Works]]Works
+|Enda Tamweel's operational system integrated with T24
+
+|[[J-1]]J-1
+|Day minus one - refers to data from the previous business day
+
+|[[HBAR]]HBAR
+|The native cryptocurrency of the Hedera network used to pay for transaction fees
+
+|[[Minting]]Minting
+|The process of creating new tokens on the Hedera network
+
+|[[Burning]]Burning
+|The process of permanently removing tokens from circulation on the Hedera network
+
+|[[Refresh Token]]Refresh Token
+|A long-lived token used to obtain new access tokens without requiring the user to re-authenticate
 |===
 
 ////
 to reference a TERM in the documentation, you have to use the following syntax
-<<../01_introduction_and_goals/04_glossary.adoc#DLT, DLT>>
+<<../01_introduction_and_goals/04_glossary.adoc#HTS, HTS>>
 ////

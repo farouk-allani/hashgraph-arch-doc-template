@@ -1,10 +1,305 @@
 = Runtime View
 
-[NOTE]
-====
-This documentation is intended for developers and architects to help them understand how the application has been implemented and the functions implemented in each component and how the components interact.
+This section describes the key runtime scenarios of the Enda Tamweel Loyalty Platform, illustrating how components interact during important operations.
 
-This document should contain Sequence diagrams to show the sequence of events to implement a particular feature. It should also contain state diagrams, if pertinent, to show the different states of information in the processes.
+== User Registration and Wallet Creation
 
-It can contain any other details (class diagrams, ERM and more) which would help a developer understand the system. The deployment is described in the deployment view
-====
+This sequence shows how a new client is registered and their Hedera wallet is created.
+
+[plantuml, format=png]
+----
+@startuml
+title User Registration & Wallet Creation Flow
+
+actor Client
+participant "Web/Mobile App" as Frontend
+participant "Backend Service" as Backend
+participant "User Module" as UserModule
+participant "Wallet Module" as WalletModule
+participant "Application DB" as DB
+participant "Hedera Network" as Hedera
+
+Client -> Frontend: Submit registration form
+Frontend -> Backend: POST /auth/register
+Backend -> UserModule: createUser(userData)
+UserModule -> DB: Check if user exists
+DB --> UserModule: User not found
+UserModule -> WalletModule: createWallet()
+WalletModule -> Hedera: Create new Hedera Account
+Hedera --> WalletModule: Account ID + Key Pair
+WalletModule -> WalletModule: Encrypt private key
+WalletModule -> DB: Store encrypted credentials
+WalletModule --> UserModule: Wallet created
+UserModule -> DB: Create user record
+DB --> UserModule: User created
+UserModule --> Backend: User + Wallet info
+Backend --> Frontend: Success response
+Frontend --> Client: Registration complete
+
+@enduml
+----
+
+== Authentication Flow
+
+=== Login & Token Issuance
+
+[plantuml, format=png]
+----
+@startuml
+title Login & Token Issuance Flow
+
+actor User
+participant "Web/Mobile App" as Frontend
+participant "Backend Service" as Backend
+participant "Auth Module" as Auth
+participant "Application DB" as DB
+
+User -> Frontend: Enter credentials
+Frontend -> Backend: POST /auth/login
+Backend -> Auth: validateCredentials()
+Auth -> DB: Find user by username
+DB --> Auth: User record
+Auth -> Auth: Verify password hash
+Auth -> Auth: Generate JWT Access Token (15min)
+Auth -> Auth: Generate Refresh Token (7 days)
+Auth -> Auth: Hash refresh token
+Auth -> DB: Store hashed refresh token with session
+DB --> Auth: Session created
+Auth --> Backend: Tokens + Session ID
+Backend --> Frontend: Access Token + Set-Cookie (Refresh + Session)
+note right of Frontend
+  Access Token stored in memory only
+  Refresh Token in HTTP-only secure cookie
+end note
+Frontend --> User: Login successful
+
+@enduml
+----
+
+=== Access Token Expiry & Refresh
+
+[plantuml, format=png]
+----
+@startuml
+title Access Token Refresh Flow
+
+actor User
+participant "Web/Mobile App" as Frontend
+participant "Backend Service" as Backend
+participant "Auth Module" as Auth
+participant "Application DB" as DB
+
+User -> Frontend: Make API request
+Frontend -> Frontend: Check access token expiry
+note right: Token expired
+Frontend -> Backend: POST /auth/refresh\n(with refresh token cookie)
+Backend -> Auth: refreshTokens()
+Auth -> Auth: Extract refresh token from cookie
+Auth -> Auth: Hash received refresh token
+Auth -> DB: Find session by hashed token
+DB --> Auth: Valid session found
+Auth -> Auth: Invalidate old refresh token
+Auth -> Auth: Generate new Access Token
+Auth -> Auth: Generate new Refresh Token (rotation)
+Auth -> Auth: Hash new refresh token
+Auth -> DB: Update session with new hashed token
+DB --> Auth: Session updated
+Auth --> Backend: New tokens
+Backend --> Frontend: New Access Token + Set-Cookie (New Refresh)
+Frontend -> Frontend: Store new access token in memory
+Frontend --> User: Continue with original request
+
+@enduml
+----
+
+=== Logout Flow
+
+[plantuml, format=png]
+----
+@startuml
+title Logout Flow
+
+actor User
+participant "Web/Mobile App" as Frontend
+participant "Backend Service" as Backend
+participant "Auth Module" as Auth
+participant "Audit Module" as Audit
+participant "Application DB" as DB
+
+User -> Frontend: Click logout
+Frontend -> Backend: POST /auth/logout
+Backend -> Auth: logout()
+Auth -> Auth: Extract session ID from cookie
+Auth -> DB: Revoke session
+DB --> Auth: Session invalidated
+Auth -> Audit: Log logout event
+Audit -> DB: Store audit record
+Auth --> Backend: Success
+Backend --> Frontend: Clear cookies + Success
+Frontend -> Frontend: Clear access token from memory
+Frontend --> User: Logged out
+
+@enduml
+----
+
+== Daily Points Calculation & Tokenization
+
+This is the core business process that runs daily to calculate and mint loyalty tokens.
+
+[plantuml, format=png]
+----
+@startuml
+title Daily Points Calculation & Tokenization Flow
+
+participant "Scheduler (Cron)" as Cron
+participant "Data Sync Service" as Sync
+participant "Middle DB" as MiddleDB
+participant "Points Engine" as Points
+participant "Token Module" as Token
+participant "Application DB" as AppDB
+participant "Hedera Network" as Hedera
+participant "Audit Module" as Audit
+
+Cron -> Sync: Trigger daily sync (J-1)
+Sync -> MiddleDB: Fetch client activity data
+MiddleDB --> Sync: Client activity records
+Sync -> AppDB: Store raw activity data
+Sync -> Points: Trigger points calculation
+
+loop For each client
+    Points -> Points: Apply business rules
+    note right
+        - Loan behavior scoring
+        - Payment events
+        - User activity metrics
+    end note
+    Points -> AppDB: Store daily points snapshot
+    Points -> AppDB: Update cumulative balance
+    Points -> Token: Queue mint operation
+end
+
+Token -> Token: Batch mint operations
+loop For each mint batch
+    Token -> Hedera: Mint tokens to client accounts
+    Hedera --> Token: Transaction receipt
+    Token -> AppDB: Update on-chain balance
+    Token -> Audit: Log mint operation
+end
+
+Audit -> AppDB: Store audit records
+
+note over Points, Token
+    Points are calculated based on J-1 data
+    Tokens are minted in batches for efficiency
+end note
+
+@enduml
+----
+
+== Gift Redemption & Token Burning
+
+[plantuml, format=png]
+----
+@startuml
+title Gift Redemption & Token Burning Flow
+
+actor Client
+actor Admin
+participant "Web/Mobile App" as ClientApp
+participant "Admin Panel" as AdminApp
+participant "Backend Service" as Backend
+participant "Gift Module" as Gift
+participant "Token Module" as Token
+participant "Application DB" as DB
+participant "Hedera Network" as Hedera
+participant "Audit Module" as Audit
+
+== Redemption Request ==
+Client -> ClientApp: Browse gift catalog
+ClientApp -> Backend: GET /gifts
+Backend -> Gift: getGiftCatalog()
+Gift -> DB: Query available gifts
+DB --> Gift: Gift list
+Gift --> Backend: Gift catalog
+Backend --> ClientApp: Display gifts
+
+Client -> ClientApp: Select gift to redeem
+ClientApp -> Backend: POST /redemptions
+Backend -> Gift: createRedemptionRequest()
+Gift -> DB: Check client balance
+DB --> Gift: Sufficient balance
+Gift -> DB: Create pending redemption
+DB --> Gift: Redemption created
+Gift --> Backend: Redemption pending
+Backend --> ClientApp: Request submitted
+ClientApp --> Client: Awaiting approval
+
+== Admin Approval ==
+Admin -> AdminApp: View pending redemptions
+AdminApp -> Backend: GET /admin/redemptions
+Backend -> Gift: getPendingRedemptions()
+Gift -> DB: Query pending requests
+DB --> Gift: Pending list
+Gift --> Backend: Redemptions list
+Backend --> AdminApp: Display redemptions
+
+Admin -> AdminApp: Approve redemption
+AdminApp -> Backend: PUT /admin/redemptions/{id}/approve
+Backend -> Gift: approveRedemption()
+Gift -> DB: Update status to approved
+Gift -> Token: burnTokens(clientId, amount)
+Token -> DB: Get client wallet info
+DB --> Token: Encrypted private key
+Token -> Token: Decrypt client key
+Token -> Hedera: Burn tokens from client account
+Hedera --> Token: Transaction confirmed
+Token -> DB: Update on-chain balance
+Token --> Gift: Burn successful
+Gift -> DB: Update redemption status = completed
+Gift -> Audit: Log redemption event
+Audit -> DB: Store audit record
+Gift --> Backend: Redemption approved
+Backend --> AdminApp: Success
+AdminApp --> Admin: Approval confirmed
+
+@enduml
+----
+
+== Balance Reconciliation
+
+Periodic process to ensure database and on-chain balances are synchronized.
+
+[plantuml, format=png]
+----
+@startuml
+title Balance Reconciliation Flow
+
+participant "Scheduler" as Cron
+participant "Token Module" as Token
+participant "Application DB" as DB
+participant "Hedera Network" as Hedera
+participant "Audit Module" as Audit
+
+Cron -> Token: Trigger reconciliation
+Token -> DB: Get all client accounts
+DB --> Token: Client list with stored balances
+
+loop For each client
+    Token -> Hedera: Query token balance
+    Hedera --> Token: On-chain balance
+    Token -> Token: Compare DB vs On-chain
+    
+    alt Balances match
+        Token -> Token: Mark as reconciled
+    else Balances differ
+        Token -> Audit: Log discrepancy
+        Token -> DB: Store discrepancy record
+        note right: Manual investigation required
+    end
+end
+
+Token -> Audit: Log reconciliation summary
+Audit -> DB: Store audit record
+
+@enduml
+----

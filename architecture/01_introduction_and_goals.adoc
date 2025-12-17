@@ -9,6 +9,17 @@ This section provides a high-level overview of the project goals and key require
 
 // tag::manager[]
 == Executive Summary
-The Managed Transaction Gateway provides a managed solution to interact with the Hedera network without the need to handle HBAR or pay fees directly. This service includes a Service Level Agreement (SLA) and an administration dashboard for Customers, along with a free implementation for Developers. Pricing is based on transaction volume to meet the specific needs of each customer and the terms of the purchased plan.
+The Enda Tamweel HTS-Based Loyalty Tokenization Platform is a loyalty and client fidelization system that manages client points using traditional databases combined with Hedera Hashgraph's HTS (Hedera Token Service). Points are tokenized as mintable and burnable HTS tokens that reflect the points accumulated by each client.
+
+The platform integrates Enda Tamweel's existing T24 and Works systems through an intermediate consolidated database (Middle DB), updated daily (J-1). Based on extracted data, daily points are calculated for each client, stored in the application database, and reflected in their on-chain token balances.
+
+Key capabilities include:
+
+* Automatic Hedera account creation for each registered client
+* Daily points calculation based on client activity from the Middle DB
+* Automatic minting of HTS loyalty tokens to client accounts
+* Gift redemption workflow with admin approval and token burning
+* Multi-tier role management (Client, Admin, Super Admin)
+* Secure JWT-based authentication with token rotation
 // end::manager[]
 

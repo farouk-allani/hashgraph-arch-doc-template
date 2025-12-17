@@ -1,54 +1,384 @@
 = Deployment View
 
-[NOTE]
-====
-This diagram shows how the system is deployed including the protocol details. Update it when changing the deployment architecture or moving to new infrastructure.
+This section describes the technical infrastructure and deployment architecture for the Enda Tamweel Loyalty Platform.
 
-It should contain the description about how the infrastructure is set up as well as how it is used in the CI/CD pipeline. Which tests are run in which environment, what causes a deployment to fail and the criteria for success.
-
-====
-
-== Branching Strategy
-[NOTE]
-====
-This is also the place to document the branching strategy and which branches are deployed to what environment
-====
-
-=== Overview
-The branching strategy defines how source code is managed in Git to ensure stability, collaboration, and smooth release cycles.
-
-=== Branch Types
-
-[NOTE]
-====
-
-Branch type e.g
-
-* `main`
-* `develop`
-* `release`
-====
-
-=== Branch Names
-
-[NOTE]
-====
-Branch naming convention
-
-* `feature/login-authentication`
-* `feature/gateway`
-* `release/1.2.0`
-* `hotfix/1.2.1`
-====
-
-=== Branch wokflow
+== Infrastructure Overview
 
 [plantuml, format=png]
 ----
 @startuml
-main -down-> release
-release -down-> develop
-develop -down-> feature
-main -down-> hotfix
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Deployment.puml
+
+LAYOUT_WITH_LEGEND()
+
+title Deployment Diagram - Enda Tamweel Loyalty Platform
+
+Deployment_Node(cloud, "Cloud Infrastructure", "AWS/Azure/GCP") {
+    Deployment_Node(cdn, "CDN", "CloudFront/Azure CDN") {
+        Container(webAssets, "Web Assets", "Static files", "React build artifacts")
+    }
+    
+    Deployment_Node(k8s, "Kubernetes Cluster", "EKS/AKS/GKE") {
+        Deployment_Node(webPod, "Web Pod", "Node.js") {
+            Container(webApp, "Web Application", "React", "Served via Nginx")
+        }
+        
+        Deployment_Node(apiPod, "API Pods (x3)", "Node.js 18+") {
+            Container(backend, "Backend Service", "NestJS", "REST API")
+        }
+        
+        Deployment_Node(workerPod, "Worker Pods (x2)", "Node.js 18+") {
+            Container(jobQueue, "Job Workers", "Bull", "Background processing")
+        }
+    }
+    
+    Deployment_Node(dbCluster, "Database Cluster", "Managed PostgreSQL") {
+        ContainerDb(postgres, "PostgreSQL", "v15+", "Primary + Read Replicas")
+    }
+    
+    Deployment_Node(cache, "Cache Layer", "Managed Redis") {
+        Container(redis, "Redis", "v7+", "Session cache + Job queue")
+    }
+}
+
+Deployment_Node(enda, "Enda Tamweel Data Center", "On-premises") {
+    ContainerDb(middleDb, "Middle DB", "SQL Server", "T24/Works consolidated data")
+}
+
+Deployment_Node(hedera, "Hedera Network", "Mainnet/Testnet") {
+    Container(hts, "Hedera Token Service", "HTS", "Loyalty Token")
+    Container(hcs, "Hedera Account Service", "HAPI", "Account management")
+}
+
+Deployment_Node(mobile, "Mobile Stores", "iOS/Android") {
+    Container(iosApp, "iOS App", "React Native", "App Store")
+    Container(androidApp, "Android App", "React Native", "Play Store")
+}
+
+Rel(webAssets, webApp, "Serves", "HTTPS")
+Rel(webApp, backend, "API calls", "HTTPS/REST")
+Rel(iosApp, backend, "API calls", "HTTPS/REST")
+Rel(androidApp, backend, "API calls", "HTTPS/REST")
+Rel(backend, postgres, "Reads/Writes", "TCP/SSL")
+Rel(backend, redis, "Cache/Queue", "TCP")
+Rel(jobQueue, redis, "Processes jobs", "TCP")
+Rel(backend, middleDb, "Reads daily", "TCP/SSL (VPN)")
+Rel(backend, hts, "Token operations", "HTTPS")
+Rel(backend, hcs, "Account operations", "HTTPS")
+
 @enduml
 ----
+
+== Environment Configuration
+
+=== Production Environment
+
+[cols="1,3,2", options="header"]
+|===
+|Component |Configuration |Scaling
+
+|Web Application
+|3 pod replicas behind load balancer
+|HPA: 3-10 pods based on CPU
+
+|Backend Service
+|3 pod replicas with health checks
+|HPA: 3-15 pods based on requests/sec
+
+|Job Workers
+|2 dedicated worker pods
+|Manual scaling for batch operations
+
+|PostgreSQL
+|Managed service with read replicas
+|Vertical scaling + read replicas
+
+|Redis
+|Managed cluster mode
+|Vertical scaling
+
+|===
+
+=== Staging Environment
+
+[cols="1,3", options="header"]
+|===
+|Component |Configuration
+
+|Web Application |1 pod replica
+|Backend Service |2 pod replicas
+|Job Workers |1 worker pod
+|PostgreSQL |Single instance (development tier)
+|Redis |Single instance
+|Hedera Network |Testnet
+|===
+
+== Network Architecture
+
+=== Security Zones
+
+[plantuml, format=png]
+----
+@startuml
+title Network Security Zones
+
+rectangle "Public Zone" {
+    [CDN] as cdn
+    [Load Balancer] as lb
+}
+
+rectangle "DMZ" {
+    [Web Application] as web
+    [API Gateway] as gateway
+}
+
+rectangle "Application Zone" {
+    [Backend Services] as backend
+    [Job Workers] as workers
+}
+
+rectangle "Data Zone" {
+    [PostgreSQL] as db
+    [Redis] as redis
+}
+
+rectangle "External Zone" {
+    [Hedera Network] as hedera
+    [Middle DB (VPN)] as middledb
+}
+
+cdn --> lb : HTTPS
+lb --> web : HTTPS
+lb --> gateway : HTTPS
+gateway --> backend : Internal
+backend --> workers : Redis
+backend --> db : SSL
+backend --> redis : TLS
+workers --> db : SSL
+backend --> hedera : HTTPS
+backend --> middledb : VPN/SSL
+
+@enduml
+----
+
+=== Firewall Rules
+
+[cols="1,1,1,2", options="header"]
+|===
+|Source |Destination |Port |Purpose
+
+|Internet |CDN/Load Balancer |443 |HTTPS traffic
+|Load Balancer |Web/API Pods |8080 |Internal HTTP
+|API Pods |PostgreSQL |5432 |Database connections
+|API Pods |Redis |6379 |Cache and queue
+|API Pods |Hedera |443 |Token operations
+|API Pods |Middle DB |1433 |Data sync (VPN only)
+|===
+
+== Branching Strategy
+
+=== Overview
+The branching strategy ensures stability, collaboration, and smooth release cycles aligned with Enda Tamweel's deployment requirements.
+
+=== Branch Types
+
+[cols="1,2,3", options="header"]
+|===
+|Branch |Purpose |Deployed To
+
+|`main`
+|Production-ready code
+|Production environment
+
+|`develop`
+|Integration branch for features
+|Staging environment
+
+|`release/*`
+|Release preparation and stabilization
+|Pre-production testing
+
+|`feature/*`
+|New feature development
+|Developer environments
+
+|`hotfix/*`
+|Production bug fixes
+|Fast-track to production
+|===
+
+=== Branch Naming Convention
+
+* `feature/TICKET-123-user-registration`
+* `feature/loyalty-points-calculation`
+* `release/1.2.0`
+* `hotfix/1.2.1-token-burn-fix`
+
+=== Branch Workflow
+
+[plantuml, format=png]
+----
+@startuml
+title Git Branching Workflow
+
+skinparam rectangle {
+    BackgroundColor<<main>> #90EE90
+    BackgroundColor<<release>> #FFD700
+    BackgroundColor<<develop>> #87CEEB
+    BackgroundColor<<feature>> #DDA0DD
+    BackgroundColor<<hotfix>> #FF6B6B
+}
+
+rectangle "main" <<main>> as main
+rectangle "release/1.0" <<release>> as release
+rectangle "develop" <<develop>> as develop
+rectangle "feature/wallet" <<feature>> as feature1
+rectangle "feature/points" <<feature>> as feature2
+rectangle "hotfix/1.0.1" <<hotfix>> as hotfix
+
+main -down-> release : create release
+release -down-> develop : merge back
+develop -down-> feature1 : branch off
+develop -down-> feature2 : branch off
+feature1 -up-> develop : PR merge
+feature2 -up-> develop : PR merge
+release -up-> main : release merge
+main -down-> hotfix : urgent fix
+hotfix -up-> main : merge fix
+hotfix -down-> develop : merge fix
+
+@enduml
+----
+
+== CI/CD Pipeline
+
+=== Pipeline Overview
+
+[plantuml, format=png]
+----
+@startuml
+title CI/CD Pipeline
+
+|Developer|
+start
+:Push code to feature branch;
+
+|CI Pipeline|
+:Trigger build;
+fork
+    :Lint code;
+fork again
+    :Run unit tests;
+fork again
+    :Security scan (SAST);
+end fork
+:Build Docker images;
+:Push to container registry;
+
+|CD Pipeline - Staging|
+:Deploy to staging;
+:Run integration tests;
+:Run E2E tests;
+if (All tests pass?) then (yes)
+    :Approve for production;
+else (no)
+    :Notify team;
+    stop
+endif
+
+|CD Pipeline - Production|
+:Blue-green deployment;
+:Health checks;
+:Smoke tests;
+if (Healthy?) then (yes)
+    :Complete deployment;
+    stop
+else (no)
+    :Automatic rollback;
+    :Alert team;
+    stop
+endif
+
+@enduml
+----
+
+=== Pipeline Stages
+
+[cols="1,2,3", options="header"]
+|===
+|Stage |Actions |Success Criteria
+
+|Build
+|Lint, compile, unit tests, build Docker images
+|All tests pass, image built successfully
+
+|Security
+|SAST scan, dependency vulnerability check
+|No critical/high vulnerabilities
+
+|Deploy Staging
+|Deploy to staging K8s cluster
+|Pods healthy, endpoints responding
+
+|Integration Tests
+|API integration tests, Hedera testnet tests
+|All integration tests pass
+
+|E2E Tests
+|Full user journey tests
+|All scenarios complete successfully
+
+|Deploy Production
+|Blue-green deployment to production
+|Zero-downtime deployment complete
+
+|Post-Deploy
+|Smoke tests, monitoring verification
+|All health checks pass
+|===
+
+=== Deployment Success Criteria
+
+* All pods reach `Ready` state within 5 minutes
+* Health check endpoints return 200 OK
+* No error spike in monitoring (>1% error rate triggers rollback)
+* Database migrations complete successfully
+* Hedera connectivity verified
+
+== Secrets Management
+
+=== Secret Categories
+
+[cols="1,2,2", options="header"]
+|===
+|Category |Secrets |Storage
+
+|Database
+|PostgreSQL credentials, connection strings
+|Kubernetes Secrets / Vault
+
+|Authentication
+|JWT signing keys, refresh token secrets
+|Vault / KMS
+
+|Hedera
+|Operator account ID, private keys, token IDs
+|Vault with strict access control
+
+|External
+|Middle DB credentials, API keys
+|Vault / Sealed Secrets
+
+|===
+
+=== Key Rotation Policy
+
+[cols="1,2", options="header"]
+|===
+|Secret Type |Rotation Frequency
+
+|JWT Signing Keys |90 days
+|Database Passwords |90 days
+|Hedera Operator Keys |Manual (with audit)
+|API Keys |180 days
+|===

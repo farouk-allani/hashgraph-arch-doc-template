@@ -1,6 +1,6 @@
-= Managed Transaction Gateway service: Architecture Overview
+= Enda Tamweel HTS-Based Loyalty Tokenization Platform: Architecture Overview
 :doctype: book
-:revnumber: 1.1
+:revnumber: 1.0
 :revdate: {localdate}
 :toc:
 :toc-title: Table of Contents
@@ -53,6 +53,14 @@ include::architecture/04_architecture_decisions.adoc[]
 // increase to heading3
 :leveloffset: +1
 include::architecture/04_architecture_decisions/adr-001-my-project.adoc[]
+
+include::architecture/04_architecture_decisions/adr-002-backend-framework.adoc[]
+
+include::architecture/04_architecture_decisions/adr-003-authentication-strategy.adoc[]
+
+include::architecture/04_architecture_decisions/adr-004-custodial-wallet.adoc[]
+
+include::architecture/04_architecture_decisions/adr-005-batch-processing.adoc[]
 
 
 // decrease back to heading2

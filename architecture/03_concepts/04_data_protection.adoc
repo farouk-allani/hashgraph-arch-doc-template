@@ -1,12 +1,357 @@
 = Data Protection and Privacy
 
-[NOTE]
-====
-Detail the data protection regulation that is relevant for your project. If you keep data in a smart-contract, specify why it is OK to do so for the data stored in the smart-contract
+This section describes the data protection measures and privacy controls implemented in the Enda Tamweel Loyalty Platform to ensure compliance with applicable regulations and protect user data.
 
-- GDPR and CCPA compliant data handling processes
-- Data anonymization for analytics purposes
-- Data anonymization for replicating the production data in Production Tests
-- Regular data protection impact assessments (DPIA)
+== Regulatory Framework
 
-====
+=== Applicable Regulations
+
+The platform is designed to comply with:
+
+[cols="1,3", options="header"]
+|===
+|Regulation |Applicability
+
+|Tunisia Personal Data Protection Law (Law 2004-63)
+|Primary regulation for Enda Tamweel operations in Tunisia
+
+|GDPR Principles
+|Applied as best practice for data protection
+
+|Financial Services Regulations
+|Microfinance and banking data requirements
+
+|Hedera Network Compliance
+|Public blockchain data considerations
+|===
+
+== Data Classification
+
+=== Data Categories
+
+[cols="1,2,2,2", options="header"]
+|===
+|Category |Examples |Sensitivity |Storage
+
+|Personal Identifiable Information (PII)
+|Name, email, phone, national ID
+|High
+|Encrypted at rest
+
+|Financial Data
+|Loan details, point balances, transactions
+|High
+|Encrypted at rest
+
+|Authentication Credentials
+|Password hashes, refresh tokens
+|Critical
+|Hashed + encrypted
+
+|Cryptographic Keys
+|Hedera private keys
+|Critical
+|AES-256 encrypted
+
+|Public Blockchain Data
+|Hedera account IDs, transaction IDs
+|Low
+|Inherently public
+|===
+
+=== Data Handling by Location
+
+[cols="1,2,2", options="header"]
+|===
+|Location |Data Type |Protection
+
+|Application Database
+|User profiles, points history, redemptions
+|Encryption at rest (AES-256), TLS in transit
+
+|Redis Cache
+|Session data, temporary balances
+|In-memory, TLS, auto-expiry
+
+|Hedera Network
+|Account IDs, token balances, transaction records
+|Public by design (no PII stored on-chain)
+
+|Log Storage
+|Audit logs, application logs
+|Encryption, access control, retention limits
+|===
+
+== On-Chain Data Considerations
+
+=== What is Stored On-Chain
+
+[cols="1,2,2", options="header"]
+|===
+|Data |On-Chain |Rationale
+
+|Hedera Account ID
+|Yes
+|Required for token operations; not personally identifiable alone
+
+|Token Balance
+|Yes
+|Core functionality; linked to account ID only
+
+|Transaction Records
+|Yes
+|Immutable audit trail; contains only account IDs and amounts
+
+|User Name/Email
+|No
+|PII never stored on-chain
+
+|Private Keys
+|No
+|Stored encrypted in application database
+
+|Redemption Details
+|No
+|Stored in application database only
+|===
+
+=== Blockchain Data Privacy
+
+The platform ensures privacy by:
+
+* **Account Pseudonymity**: Hedera account IDs are not linked to user identity on-chain
+* **Off-Chain PII**: All personally identifiable information stored in traditional database
+* **Link Protection**: The mapping between user ID and Hedera account is protected in the application database
+* **Minimal On-Chain Data**: Only essential token operations recorded on Hedera
+
+== Encryption Standards
+
+=== Encryption at Rest
+
+[cols="1,2,2", options="header"]
+|===
+|Data Type |Algorithm |Key Management
+
+|Database Fields
+|AES-256-GCM
+|AWS KMS / Azure Key Vault
+
+|Hedera Private Keys
+|AES-256-GCM with PBKDF2 key derivation
+|Unique salt per user, master key in KMS
+
+|Backup Files
+|AES-256
+|Separate backup encryption key
+
+|Log Archives
+|AES-256
+|Log-specific encryption key
+|===
+
+=== Encryption in Transit
+
+[cols="1,2", options="header"]
+|===
+|Connection |Protocol
+
+|Client to API
+|TLS 1.3
+
+|Service to Database
+|TLS/SSL
+
+|Service to Redis
+|TLS
+
+|Service to Hedera
+|HTTPS/TLS
+
+|Internal Services
+|mTLS (Kubernetes)
+|===
+
+== User Rights Management
+
+=== Supported User Rights
+
+[cols="1,2,2", options="header"]
+|===
+|Right |Implementation |Limitations
+
+|Right to Access
+|User can view all their data via profile and history endpoints
+|Audit logs access restricted to admins
+
+|Right to Rectification
+|Users can update profile information
+|Historical transaction data immutable
+
+|Right to Erasure
+|Account deactivation with data anonymization
+|On-chain data cannot be deleted (public ledger)
+
+|Right to Data Portability
+|Export endpoint provides user data in JSON format
+|Token balance viewable on Hedera explorer
+
+|Right to Restriction
+|Account can be suspended by admin
+|Existing on-chain balance preserved
+|===
+
+=== Data Retention
+
+[cols="1,2,2", options="header"]
+|===
+|Data Type |Retention Period |Deletion Method
+
+|Active User Data
+|Duration of account
+|Anonymized on closure
+
+|Deactivated Accounts
+|5 years (regulatory requirement)
+|Hard delete after period
+
+|Transaction History
+|7 years
+|Archived then deleted
+
+|Audit Logs
+|7 years
+|Archived to cold storage
+
+|Session Data
+|7 days after logout
+|Auto-deleted
+
+|On-Chain Data
+|Permanent
+|Cannot be deleted (Hedera design)
+|===
+
+== Data Anonymization
+
+=== Anonymization for Account Closure
+
+When a user requests account deletion:
+
+1. **Profile Data**: Name, email, phone replaced with anonymous values
+2. **Transaction History**: User ID replaced with anonymized identifier
+3. **Audit Logs**: User reference replaced with "DELETED_USER_{hash}"
+4. **Hedera Account**: Account remains but association removed from system
+5. **Tokens**: Remaining balance burned before closure
+
+=== Anonymization for Testing
+
+[cols="1,2", options="header"]
+|===
+|Original Field |Anonymized Form
+
+|Name
+|Faker-generated name
+
+|Email
+|hash@test.example.com
+
+|Phone
+|Random valid format number
+
+|National ID
+|Random valid format ID
+
+|Hedera Account
+|Testnet account
+|===
+
+== Access Control
+
+=== Data Access Matrix
+
+[cols="1,1,1,1,1", options="header"]
+|===
+|Data |User |Admin |Super Admin |System
+
+|Own Profile
+|Read/Write
+|Read
+|Read
+|Read
+
+|Own Balance
+|Read
+|Read
+|Read
+|Read/Write
+
+|Own Transactions
+|Read
+|Read
+|Read
+|Read/Write
+
+|Other User Data
+|None
+|Read
+|Read
+|Read/Write
+
+|Hedera Keys
+|None
+|None
+|None
+|Decrypt for signing
+
+|Audit Logs
+|None
+|Limited
+|Full
+|Write
+|===
+
+== Data Protection Impact Assessment (DPIA)
+
+=== Risk Assessment Summary
+
+[cols="1,2,2,2", options="header"]
+|===
+|Risk |Likelihood |Impact |Mitigation
+
+|PII Exposure
+|Low
+|High
+|Encryption, access control, monitoring
+
+|Key Compromise
+|Low
+|Critical
+|HSM/KMS, encryption, key rotation
+
+|On-Chain Privacy
+|Medium
+|Low
+|No PII on-chain, pseudonymous accounts
+
+|Unauthorized Access
+|Low
+|High
+|RBAC, MFA for admins, audit logging
+
+|Data Breach
+|Low
+|High
+|Encryption, incident response plan
+|===
+
+== Incident Response
+
+=== Data Breach Protocol
+
+1. **Detection**: Automated monitoring alerts security team
+2. **Containment**: Isolate affected systems, revoke compromised credentials
+3. **Assessment**: Determine scope of breach, data affected
+4. **Notification**: Notify authorities within 72 hours if required
+5. **User Communication**: Inform affected users with guidance
+6. **Remediation**: Patch vulnerabilities, enhance controls
+7. **Post-Incident**: Review and update security measures

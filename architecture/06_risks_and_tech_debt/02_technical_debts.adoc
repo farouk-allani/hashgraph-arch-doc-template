@@ -1,25 +1,104 @@
 = Technical Debt
 
-////
-[NOTE]
-Known shortcuts or deficiencies that exist today.
-////
-
 The following technical debt items represent known deficiencies in the current system implementation.
 They are acknowledged and planned for future resolution:
 
-
-[cols="1,1,4,4", id=Technical-Debt, options="header"]
+[cols="1,1,4,4,2", id=Technical-Debt, options="header"]
 |===
-|ID |Severity |Description |Remediation
+|ID |Severity |Description |Remediation |Target
+
 |[[TD1]]TD1
 |High
-|The credentials stored directly in source
-|Move to secrets manager like Vault/KMS
+|Hedera operator credentials stored in environment variables rather than secure vault
+|Migrate to HashiCorp Vault or cloud KMS for all sensitive credentials
+|Sprint 3
 
 |[[TD2]]TD2
-|Low
-|Lack of automated test coverage, which may lead to regression bug
-|Increase the coverage as much as possible
+|Medium
+|Limited automated test coverage for Hedera integration layer
+|Add comprehensive integration tests using Hedera Testnet; mock SDK for unit tests
+|Sprint 4
 
+|[[TD3]]TD3
+|Medium
+|Points calculation rules hardcoded in service; no admin interface for rule management
+|Implement rule engine with database-driven configuration; add admin UI for rule management
+|Phase 2
+
+|[[TD4]]TD4
+|Low
+|Batch processing does not support partial failure recovery from exact failure point
+|Implement fine-grained checkpointing; store progress per client; resume from exact failure point
+|Sprint 5
+
+|[[TD5]]TD5
+|Medium
+|No rate limiting on internal service-to-service communication
+|Implement service mesh with rate limiting; add circuit breakers between services
+|Sprint 6
+
+|[[TD6]]TD6
+|Low
+|Audit log query performance degrades with large datasets
+|Implement log partitioning; add time-based indexes; consider moving to time-series database
+|Phase 2
+
+|[[TD7]]TD7
+|Medium
+|Mobile app stores JWT access token in secure storage instead of memory
+|Refactor mobile auth to use memory-only storage with background refresh
+|Sprint 4
+
+|[[TD8]]TD8
+|Low
+|API documentation not automatically generated from code annotations
+|Integrate Swagger/OpenAPI generation from NestJS decorators; publish to developer portal
+|Sprint 3
+
+|[[TD9]]TD9
+|Medium
+|No automated backup verification for encrypted private keys
+|Implement automated backup restore testing; verify key decryption from backups monthly
+|Sprint 5
+
+|[[TD10]]TD10
+|Low
+|Frontend components not fully accessible (WCAG compliance)
+|Conduct accessibility audit; implement ARIA labels; keyboard navigation support
+|Phase 2
+|===
+
+== Technical Debt Tracking
+
+=== Prioritization Criteria
+
+* **Severity**: Impact on security, reliability, or user experience
+* **Effort**: Development time required for resolution
+* **Risk**: Likelihood of the debt causing issues
+* **Business Value**: Benefit from resolution
+
+=== Review Cadence
+
+* **Weekly**: Review new debt items, update status
+* **Sprint Planning**: Select debt items for inclusion
+* **Monthly**: Technical debt burndown review
+* **Quarterly**: Comprehensive debt assessment
+
+== Debt Reduction Strategy
+
+[cols="1,3", options="header"]
+|===
+|Sprint Allocation |Approach
+
+|20% capacity
+|Dedicated time each sprint for debt reduction
+
+|Boy Scout Rule
+|Leave code better than you found it
+
+|Refactoring Stories
+|Major debt items tracked as user stories
+
+|Tech Spikes
+|Time-boxed investigation for complex debt
 |===

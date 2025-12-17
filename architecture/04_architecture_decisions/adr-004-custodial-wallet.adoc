@@ -1,0 +1,69 @@
+= ADR 004: Custodial Wallet Architecture for Client Hedera Accounts
+
+*Status*: Accepted
+
+*Date*: December 2025
+
+*Context*:
+Each client needs a Hedera account to hold their loyalty tokens. The key management approach affects:
+
+* User experience (onboarding complexity)
+* Security responsibility distribution
+* Operational requirements
+* Recovery procedures
+
+Alternative approaches considered:
+
+1. **Non-Custodial (User Holds Keys)**: Users manage their own Hedera keys
+2. **Hardware Wallet Integration**: Users use hardware wallets
+3. **MPC (Multi-Party Computation)**: Keys split between user and platform
+4. **Fully Custodial**: Platform manages all client keys
+
+*Decision:*
+We will implement a **fully custodial wallet architecture** where the platform manages all client Hedera account keys.
+
+Implementation:
+
+* Hedera accounts created automatically during user registration
+* Private keys encrypted with AES-256-GCM using per-user derived keys
+* Encryption master key stored in cloud KMS (AWS KMS / Azure Key Vault)
+* Platform admin key controls all mint/burn operations
+* Users cannot transfer tokens independently
+
+*Rationale:*
+
+* **User Experience**: Clients interact with familiar web/mobile interface
+* **Target Audience**: Microfinance clients may not be blockchain-savvy
+* **Operational Control**: Platform maintains full control over token lifecycle
+* **Key Recovery**: Platform can recover access if database is restored
+* **Closed Ecosystem**: Tokens cannot be used outside the platform anyway
+* **Simplified Support**: No need for user key recovery procedures
+
+*Consequences*:
+
+Positive:
+
+* Seamless onboarding - users don't need to understand blockchain
+* No risk of users losing access due to lost keys
+* Simplified mobile app without wallet complexity
+* Full control over token operations
+
+Negative:
+
+* Platform is fully responsible for key security
+* Single point of failure if platform is compromised
+* Users must trust platform completely
+* Not "true" decentralization
+
+== Security Requirements
+
+* Private keys encrypted at rest with AES-256-GCM
+* Encryption keys managed by cloud KMS with strict IAM
+* Keys decrypted only in memory during signing operations
+* Database backups encrypted separately
+* Regular key rotation for encryption keys
+
+== Related Requirements
+
+* <<../01_introduction_and_goals/02_requirements_overview.adoc#RE1, R1>> - Automatic Hedera wallet creation
+* <<../01_introduction_and_goals/03_quality_goals.adoc#Q1, Q1>> - Security

@@ -1,0 +1,73 @@
+= ADR 003: JWT Authentication with Refresh Token Rotation
+
+*Status*: Accepted
+
+*Date*: December 2025
+
+*Context*:
+The platform requires secure authentication for three user types (Client, Admin, Super Admin) with:
+
+* Protection against common web vulnerabilities (XSS, CSRF)
+* Seamless user experience without frequent re-authentication
+* Support for web and mobile applications
+* Ability to revoke sessions immediately
+* Audit trail of authentication events
+
+Alternative approaches considered:
+
+1. **Session-based Authentication**: Traditional server-side sessions
+2. **Simple JWT**: Single long-lived JWT token
+3. **OAuth 2.0 with External Provider**: Delegate authentication to Auth0, Okta
+4. **JWT with Refresh Token Rotation**: Short-lived access tokens with rotating refresh tokens
+
+*Decision:*
+We will implement **JWT authentication with refresh token rotation**.
+
+Implementation details:
+
+* **Access Token**: 
+  - Short-lived (15 minutes)
+  - Contains user ID, role, username
+  - Stored in frontend memory only (not localStorage)
+  
+* **Refresh Token**:
+  - Long-lived (7 days)
+  - Stored as HTTP-only, Secure cookie
+  - Hashed before database storage
+  - Rotated on each refresh (old token invalidated)
+
+*Rationale:*
+
+* **XSS Protection**: Access token in memory cannot be stolen by XSS attacks
+* **CSRF Protection**: HTTP-only cookies with SameSite=Strict prevent CSRF
+* **Token Theft Mitigation**: Rotation means stolen refresh token becomes invalid quickly
+* **Session Control**: Database storage allows immediate revocation
+* **Mobile Support**: Works with both web (cookies) and mobile (secure storage)
+* **Audit Capability**: All authentication events can be logged
+
+*Consequences*:
+
+Positive:
+
+* Strong security against common attack vectors
+* Users stay logged in for extended periods without re-authentication
+* Immediate session revocation capability
+* Clear audit trail of authentication events
+
+Negative:
+
+* More complex implementation than simple JWT
+* Requires database lookup for refresh token validation
+* Cookie handling differs between web and mobile
+
+== Security Controls
+
+* Refresh tokens hashed with bcrypt before storage
+* Cookie settings: HttpOnly=true, Secure=true, SameSite=Strict
+* Rate limiting on authentication endpoints
+* Account lockout after failed attempts
+
+== Related Requirements
+
+* <<../01_introduction_and_goals/02_requirements_overview.adoc#RE7, R7>> - JWT-based authentication
+* <<../01_introduction_and_goals/03_quality_goals.adoc#Q1, Q1>> - Security

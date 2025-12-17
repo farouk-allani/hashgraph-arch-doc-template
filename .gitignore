@@ -1,0 +1,17 @@
+# Build outputs - don't commit these, GitHub Actions will generate them
+build-html/
+build-pdf/
+
+# Docker
+.docker/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment variables (for Confluence publishing)
+.env

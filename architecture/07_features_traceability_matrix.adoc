@@ -1,25 +1,130 @@
 = Features Traceability Matrix (RTM)
 
-////
-[NOTE]
-====
-This matrix serves as the central point for tracing features. A feature is not a User Story. In the example below, the feature is "Secure Login" but a User Story is something a user would access the system for.
-
-E.g.: As an Administrator of the system I want to assign roles to users to manage the features they have access to
-
-Update this matrix when adding new features or when making significant changes to architectural components, quality attributes, architecture decisions, or when identifying new risks or technical debt items.
-====
-////
+This matrix traces platform features to their requirements, quality attributes, architecture decisions, and identified risks.
 
 [cols="1,3,2,2,2,2", id=ftm, options="header"]
 |===
-|ID |Feature |Requierments |Quality Attributes |Arch. Decisions |Risks/Tech Debt
+|ID |Feature |Requirements |Quality Attributes |Arch. Decisions |Risks/Tech Debt
+
 |F1
-|When a user accesses the system, they need to securely authenticate, so that they can access their personalized data and functionalities and their information can be kept private.
-|<<./01_introduction_and_goals/02_requirements_overview.adoc#R1, Web3 Auth>>
-|<<./01_introduction_and_goals/03_quality_goals.adoc#Q2, Security>>
-|<<./04_architecture_decisions/adr-001-my-project.adoc#_adr_001_description_of_the_architecture_decision_record, Security Architecture>>
-|<<./06_risks_and_tech_debt/01_risks.adoc#R2, Key Recovery>>
+|**User Authentication**: Secure login with JWT tokens and refresh token rotation, protecting user sessions with HTTP-only cookies and in-memory access tokens.
+|<<./01_introduction_and_goals/02_requirements_overview.adoc#RE7, R7 - JWT Auth>>
+|<<./01_introduction_and_goals/03_quality_goals.adoc#Q1, Q1 - Security>>
+|<<./04_architecture_decisions/adr-003-authentication-strategy.adoc#, ADR-003 Auth Strategy>>
+|<<./06_risks_and_tech_debt/02_technical_debts.adoc#TD7, TD7 - Mobile Token Storage>>
 
+|F2
+|**User Registration**: New client onboarding with automatic Hedera wallet creation and secure key storage.
+|<<./01_introduction_and_goals/02_requirements_overview.adoc#RE1, R1 - Wallet Creation>>
+|<<./01_introduction_and_goals/03_quality_goals.adoc#Q1, Q1 - Security>>, <<./01_introduction_and_goals/03_quality_goals.adoc#Q6, Q6 - Maintainability>>
+|<<./04_architecture_decisions/adr-004-custodial-wallet.adoc#, ADR-004 Custodial Wallet>>
+|<<./06_risks_and_tech_debt/01_risks.adoc#RI2, R2 - Key Compromise>>
 
+|F3
+|**Daily Points Calculation**: Automated daily extraction from Middle DB and rule-based points calculation.
+|<<./01_introduction_and_goals/02_requirements_overview.adoc#RE2, R2 - Daily Extraction>>, <<./01_introduction_and_goals/02_requirements_overview.adoc#RE3, R3 - Points Engine>>
+|<<./01_introduction_and_goals/03_quality_goals.adoc#Q2, Q2 - Reliability>>, <<./01_introduction_and_goals/03_quality_goals.adoc#Q4, Q4 - Scalability>>
+|<<./04_architecture_decisions/adr-005-batch-processing.adoc#, ADR-005 Batch Processing>>
+|<<./06_risks_and_tech_debt/01_risks.adoc#RI3, R3 - Middle DB Integration>>, <<./06_risks_and_tech_debt/02_technical_debts.adoc#TD3, TD3 - Hardcoded Rules>>
+
+|F4
+|**Token Minting**: Automatic minting of HTS loyalty tokens based on calculated points.
+|<<./01_introduction_and_goals/02_requirements_overview.adoc#RE4, R4 - Auto Minting>>, <<./01_introduction_and_goals/02_requirements_overview.adoc#IR2, IR2 - HTS Integration>>
+|<<./01_introduction_and_goals/03_quality_goals.adoc#Q2, Q2 - Reliability>>, <<./01_introduction_and_goals/03_quality_goals.adoc#Q7, Q7 - Auditability>>
+|<<./04_architecture_decisions/adr-001-my-project.adoc#, ADR-001 HTS>>
+|<<./06_risks_and_tech_debt/01_risks.adoc#RI1, R1 - Hedera Outage>>, <<./06_risks_and_tech_debt/01_risks.adoc#RI7, R7 - HBAR Costs>>
+
+|F5
+|**Gift Redemption**: Client gift requests with admin approval workflow and token burning.
+|<<./01_introduction_and_goals/02_requirements_overview.adoc#RE5, R5 - Redemption Workflow>>
+|<<./01_introduction_and_goals/03_quality_goals.adoc#Q7, Q7 - Auditability>>, <<./01_introduction_and_goals/03_quality_goals.adoc#Q8, Q8 - Data Integrity>>
+|<<./04_architecture_decisions/adr-001-my-project.adoc#, ADR-001 HTS>>
+|<<./06_risks_and_tech_debt/01_risks.adoc#RI5, R5 - Balance Discrepancy>>
+
+|F6
+|**Admin Management**: Super Admin panel for Admin account lifecycle management.
+|<<./01_introduction_and_goals/02_requirements_overview.adoc#RE6, R6 - Super Admin Panel>>
+|<<./01_introduction_and_goals/03_quality_goals.adoc#Q1, Q1 - Security>>, <<./01_introduction_and_goals/03_quality_goals.adoc#Q7, Q7 - Auditability>>
+|<<./04_architecture_decisions/adr-003-authentication-strategy.adoc#, ADR-003 Auth Strategy>>
+|N/A
+
+|F7
+|**Balance Reconciliation**: Regular comparison of database and on-chain token balances.
+|<<./01_introduction_and_goals/02_requirements_overview.adoc#RE8, R8 - Reconciliation>>
+|<<./01_introduction_and_goals/03_quality_goals.adoc#Q8, Q8 - Data Integrity>>
+|<<./04_architecture_decisions/adr-001-my-project.adoc#, ADR-001 HTS>>
+|<<./06_risks_and_tech_debt/01_risks.adoc#RI5, R5 - Balance Discrepancy>>
+
+|F8
+|**Transaction History**: Storage and retrieval of historical point calculations and redemption logs.
+|<<./01_introduction_and_goals/02_requirements_overview.adoc#RE9, R9 - History Storage>>
+|<<./01_introduction_and_goals/03_quality_goals.adoc#Q7, Q7 - Auditability>>
+|<<./04_architecture_decisions/adr-002-backend-framework.adoc#, ADR-002 NestJS>>
+|<<./06_risks_and_tech_debt/02_technical_debts.adoc#TD6, TD6 - Audit Log Performance>>
+
+|F9
+|**Web Application**: React-based web interface for clients, admins, and super admins.
+|<<./01_introduction_and_goals/02_requirements_overview.adoc#RE10, R10 - Web/Mobile Apps>>
+|<<./01_introduction_and_goals/03_quality_goals.adoc#Q3, Q3 - Performance>>, <<./01_introduction_and_goals/03_quality_goals.adoc#Q5, Q5 - Availability>>
+|<<./04_architecture_decisions/adr-002-backend-framework.adoc#, ADR-002 NestJS>>
+|<<./06_risks_and_tech_debt/02_technical_debts.adoc#TD10, TD10 - Accessibility>>
+
+|F10
+|**Mobile Application**: React Native mobile app for iOS and Android.
+|<<./01_introduction_and_goals/02_requirements_overview.adoc#RE10, R10 - Web/Mobile Apps>>
+|<<./01_introduction_and_goals/03_quality_goals.adoc#Q3, Q3 - Performance>>
+|<<./04_architecture_decisions/adr-003-authentication-strategy.adoc#, ADR-003 Auth Strategy>>
+|<<./06_risks_and_tech_debt/02_technical_debts.adoc#TD7, TD7 - Mobile Token Storage>>
+|===
+
+== Coverage Summary
+
+=== Requirements Coverage
+
+[cols="1,1,3", options="header"]
+|===
+|Requirement |Covered By |Status
+
+|R1 - Wallet Creation |F2 |✓
+|R2 - Daily Extraction |F3 |✓
+|R3 - Points Engine |F3 |✓
+|R4 - Auto Minting |F4 |✓
+|R5 - Redemption Workflow |F5 |✓
+|R6 - Super Admin Panel |F6 |✓
+|R7 - JWT Auth |F1 |✓
+|R8 - Reconciliation |F7 |✓
+|R9 - History Storage |F8 |✓
+|R10 - Web/Mobile Apps |F9, F10 |✓
+|IR1 - Middle DB Integration |F3 |✓
+|IR2 - HTS Integration |F4, F5 |✓
+|IR3 - Hedera Account Service |F2 |✓
+|===
+
+=== Quality Attributes Coverage
+
+[cols="1,3", options="header"]
+|===
+|Quality Attribute |Covered By Features
+
+|Q1 - Security |F1, F2, F6
+|Q2 - Reliability |F3, F4
+|Q3 - Performance |F9, F10
+|Q4 - Scalability |F3
+|Q5 - Availability |F9
+|Q6 - Maintainability |F2
+|Q7 - Auditability |F4, F5, F6, F8
+|Q8 - Data Integrity |F5, F7
+|===
+
+=== ADR Coverage
+
+[cols="1,3", options="header"]
+|===
+|ADR |Related Features
+
+|ADR-001 HTS Token |F4, F5, F7
+|ADR-002 NestJS |F8, F9
+|ADR-003 Authentication |F1, F6, F10
+|ADR-004 Custodial Wallet |F2
+|ADR-005 Batch Processing |F3
 |===

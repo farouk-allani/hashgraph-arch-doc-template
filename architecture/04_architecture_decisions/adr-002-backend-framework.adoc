@@ -1,0 +1,57 @@
+= ADR 002: Use NestJS as Backend Framework
+
+*Status*: Accepted
+
+*Date*: December 2025
+
+*Context*:
+The backend service needs to handle:
+
+* RESTful API endpoints for web and mobile clients
+* Scheduled batch jobs for daily data processing
+* Integration with Hedera SDK (JavaScript/TypeScript)
+* Integration with PostgreSQL and Redis
+* Secure authentication and authorization
+* Scalable architecture for growing user base
+
+Alternative frameworks considered:
+
+1. **Express.js**: Minimal, flexible Node.js framework
+2. **Fastify**: High-performance Node.js framework
+3. **NestJS**: Enterprise-grade TypeScript framework
+4. **Django (Python)**: Full-featured Python web framework
+5. **Spring Boot (Java)**: Enterprise Java framework
+
+*Decision:*
+We will use **NestJS** as the backend framework.
+
+Rationale:
+
+* **TypeScript Native**: Strong typing reduces bugs and improves maintainability
+* **Modular Architecture**: Built-in module system aligns with our component design
+* **Dependency Injection**: Enterprise patterns for testable, maintainable code
+* **Ecosystem**: Excellent packages for PostgreSQL (TypeORM), Redis (Bull), JWT
+* **Hedera Compatibility**: JavaScript SDK works seamlessly with TypeScript
+* **Team Expertise**: Development team has strong TypeScript experience
+* **Documentation**: Comprehensive documentation and active community
+
+*Consequences*:
+
+Positive:
+
+* Clean, modular codebase with clear separation of concerns
+* Strong typing catches errors at compile time
+* Easy to write unit and integration tests
+* Excellent support for background job processing
+* Guards and interceptors simplify authentication/authorization
+
+Negative:
+
+* Steeper learning curve than Express.js
+* More boilerplate code for simple endpoints
+* Requires TypeScript build step
+
+== Related Requirements
+
+* <<../01_introduction_and_goals/02_requirements_overview.adoc#RE7, R7>> - JWT-based authentication
+* <<../01_introduction_and_goals/03_quality_goals.adoc#Q6, Q6>> - Maintainability

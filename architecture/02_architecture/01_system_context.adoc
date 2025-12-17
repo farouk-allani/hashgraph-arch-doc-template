@@ -2,9 +2,7 @@
 
 == Overview
 
-[NOTE]
-This diagram shows the systems that are communicating and interacting within the scope of the Managed Transaction Gateway.
-The example below gives a view on the different types of components
+This diagram shows the systems that are communicating and interacting within the scope of the Enda Tamweel Loyalty Tokenization Platform. The platform bridges traditional banking systems with Hedera's blockchain-based tokenization.
 
 == Context Diagram
 // tag::architect[]
@@ -16,59 +14,88 @@ The example below gives a view on the different types of components
 
 LAYOUT_WITH_LEGEND()
 
-title System Context diagram for the Application
+title System Context diagram for Enda Tamweel Loyalty Platform
 
-Person_Ext(technicalUser, "User who is not managed by Application", "Long description of what the user will try to achieve with the Application")
+Enterprise_Boundary(c0, "Enda Tamweel") {
+Person(client, "Client", "Enda Tamweel customer who earns and redeems loyalty points")
+Person(admin, "Admin", "Enda Tamweel employee who manages gifts and approves redemptions")
+Person(superadmin, "Super Admin", "Manages Admin accounts and views audit logs")
 
-Enterprise_Boundary(c0, "THA") {
-Person(customer, "Customer", "A customer of THA that wants to use the Application and do some awesome stuff with it")
-Person(admin, "Admin", "A THA employee that serves as an admin and onboards customers.")
+System(platform, "Loyalty Platform", "Web and Mobile applications for clients, admins, and super admins to interact with the loyalty system")
+System(backend, "Backend Service", "NestJS backend that processes points, manages tokens, and exposes APIs")
 
-System(frontend, "Application Frontend", "Allows users to interact with the application and the admins to manage it")
-System(backend, "Application Backend", "Implementation of the persistence layer and some of the features of the application")
-
-System_Ext(vault, "Hashicorp Vault", "The KMS of choice that holds the secrets of the application and can sign messages with private keys. Explain what it's used for")
+System_Ext(middledb, "Middle DB", "Consolidated database from T24 and Works systems, updated daily (J-1)")
 }
 
-System_Ext(node, "Hedera Hashgraph Node", "Hedera is the DLT network which the customer wants to interact with. The node serves as a gateway to the network.")
+System_Ext(hedera, "Hedera Hashgraph", "Distributed ledger network providing HTS for token management and account services")
 
-System_Ext(hedera, "Hedera Hashgraph", "Hedera is a fully open source public distributed ledger that utilizes the fast, fair, and secure hashgraph consensus. Its network services include Solidity-based smart contracts, as well as native tokenization and consensus services used to build decentralized applications.")
-
-Rel(admin, frontend, "Uses to onboard new customers")
-Rel(customer, frontend, "Uses for visualized information")
-Rel(frontend, backend, "Requests actions or information")
-Rel(backend, frontend, "Returns responses to the requests")
-Rel(technicalUser, backend, "Sends REST requests and receives responses")
-Rel(backend, vault, "Requests to sign raw transaction payload")
-Rel(vault, backend, "Returns signed transaction payload")
-Rel(backend, node, "Hands over signed transaction payload")
-Rel(node, hedera, "Broadcasts transaction on the network")
+Rel(client, platform, "Views balance, requests gift redemption")
+Rel(admin, platform, "Manages gifts, approves/rejects redemptions")
+Rel(superadmin, platform, "Manages Admin accounts, views audit logs")
+Rel(platform, backend, "REST API calls")
+Rel(backend, middledb, "Reads client activity data (daily)")
+Rel(backend, hedera, "Creates accounts, mints/burns tokens")
 
 @enduml
 
 ----
+
+// end::architect[]
+
 == Key Elements
 
-=== Admin User
-[NOTE]
-Description of what the Admin User does, which features they use and what for. Any feature listed here should be described in the <<../07_features_traceability_matrix.adoc#ftm, features>> list
+=== Client
+Enda Tamweel customers who participate in the loyalty program. Clients can:
 
-=== Customer
-[NOTE]
-Same as for the other user
+* View their current loyalty point balance (both in-app and on-chain)
+* Browse available gifts in the catalog
+* Request gift redemptions
+* Track their redemption history
 
-=== Application Frontend
-[NOTE]
-This container represents any way to interact with the system. This can include a Web App, Mobile App, Native App and definitely includes the wallet. Here we describe what the UI enables, who will use it and what <<../07_features_traceability_matrix.adoc#ftm, features>> are made available through that container. These should be listed even if they're the same as for the users.
+=== Admin
+Enda Tamweel employees responsible for managing the loyalty program. Admins can:
 
-An alternative to listing the features here, is to reference the <<03_component_view.adoc#components, components view>> to the specific section for the container
+* View and manage the gift catalog
+* Review and approve/reject client redemption requests
+* Manually create client accounts when needed
+* View client transaction history
 
-=== Application Backend
-[NOTE]
-Overview of the backend and links to the relevant <<05_deployment_view.adoc#_deployment_view, deployment>> and ADR
+=== Super Admin
+Senior administrators with elevated privileges. Super Admins can:
 
-=== External containers
-[NOTE]
-The external containers should be described as to why they are used, with a reference to the relevant ADR
+* Create, modify, and deactivate Admin accounts
+* View comprehensive audit logs
+* Access system-wide reports and analytics
 
+=== Loyalty Platform (Frontend)
+The user-facing applications built with React (Web) and React Native (Mobile). The frontend provides:
+
+* Responsive web application for desktop and tablet users
+* Native mobile applications for iOS and Android
+* Role-based interfaces for Clients, Admins, and Super Admins
+* Real-time balance display and transaction history
+
+=== Backend Service
+The core NestJS application that orchestrates all platform operations:
+
+* Fetches and processes data from Middle DB
+* Calculates daily points based on business rules
+* Manages Hedera account creation and token operations
+* Exposes secure REST APIs for all frontend operations
+* Handles authentication and authorization
+
+=== Middle DB (External)
+Enda Tamweel's consolidated database that aggregates data from:
+
+* T24 core banking system
+* Works operational system
+
+Updated daily with J-1 data cycle. The platform has read-only access for extracting client activity information.
+
+=== Hedera Hashgraph (External)
+The distributed ledger network providing:
+
+* Hedera Token Service (HTS) for the loyalty token
+* Account creation for each registered client
+* Immutable transaction records for minting and burning operations
 

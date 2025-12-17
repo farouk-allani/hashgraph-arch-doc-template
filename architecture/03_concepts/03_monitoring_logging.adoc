@@ -1,12 +1,401 @@
 = Monitoring and Logging
 
-[NOTE]
-====
-Add any design decision on how monitoring and logging is done and where the logs are kept and for how long
+This section describes the monitoring, logging, and observability architecture for the Enda Tamweel Loyalty Platform.
 
-- Centralized logging using the ELK (Elasticsearch, Logstash, Kibana) stack
-- Prometheus for metrics collection and Grafana for visualization
-- Automated alerting system for critical issues
-- Detail the appropriate logging solution for you library and framework e.g. `log4j`
-- Describe the dashboards which allow to monitor the application. e.g. Prometeus and Grafana and how they are set up and the data that is presented
-====
+== Logging Architecture
+
+=== Log Levels and Usage
+
+[cols="1,2,3", options="header"]
+|===
+|Level |Usage |Examples
+
+|ERROR
+|System failures requiring immediate attention
+|Database connection failure, Hedera transaction failure, unhandled exceptions
+
+|WARN
+|Potential issues that don't prevent operation
+|Retry attempts, degraded performance, cache misses
+
+|INFO
+|Normal operational events
+|User login, token minting, redemption approval
+
+|DEBUG
+|Detailed information for troubleshooting
+|Request/response payloads, calculation steps
+
+|TRACE
+|Very detailed debugging information
+|Function entry/exit, variable values
+|===
+
+=== Structured Logging Format
+
+All logs follow a structured JSON format for easy parsing:
+
+[source,json]
+----
+{
+  "timestamp": "2025-12-16T10:30:45.123Z",
+  "level": "INFO",
+  "service": "backend-api",
+  "traceId": "abc123def456",
+  "spanId": "span789",
+  "userId": "user-001",
+  "action": "token.mint",
+  "details": {
+    "amount": 100,
+    "accountId": "0.0.12345"
+  },
+  "duration": 245
+}
+----
+
+=== Log Categories
+
+[cols="1,2,2", options="header"]
+|===
+|Category |Events Logged |Retention
+
+|Security
+|Authentication, authorization, access denied
+|1 year
+
+|Audit
+|Token operations, redemptions, admin actions
+|7 years (compliance)
+
+|Application
+|Business logic, errors, warnings
+|90 days
+
+|Performance
+|Response times, queue metrics
+|30 days
+
+|Debug
+|Detailed troubleshooting
+|7 days
+|===
+
+== Centralized Logging Stack
+
+=== Architecture
+
+[plantuml, format=png]
+----
+@startuml
+title Centralized Logging Architecture
+
+rectangle "Application Layer" {
+    [Backend Service] as backend
+    [Job Workers] as workers
+    [Web Application] as web
+}
+
+rectangle "Log Collection" {
+    [Fluentd/Filebeat] as collector
+}
+
+rectangle "Log Processing" {
+    [Logstash] as logstash
+    queue "Kafka" as kafka
+}
+
+rectangle "Storage & Analysis" {
+    database "Elasticsearch" as elastic
+    [Kibana] as kibana
+}
+
+backend --> collector : JSON logs
+workers --> collector : JSON logs
+web --> collector : Client errors
+collector --> kafka : Stream
+kafka --> logstash : Consume
+logstash --> elastic : Index
+elastic --> kibana : Query
+
+@enduml
+----
+
+=== Kibana Dashboards
+
+[cols="1,3", options="header"]
+|===
+|Dashboard |Content
+
+|Operations Overview
+|Request volume, error rates, response times, active users
+
+|Security Dashboard
+|Login attempts, failed authentications, permission denials
+
+|Token Operations
+|Minting volume, burning events, balance changes
+
+|Audit Trail
+|All audit events with filtering by user, action, time
+
+|Error Analysis
+|Error trends, stack traces, affected users
+|===
+
+== Audit Logging
+
+=== Mandatory Audit Events
+
+All of the following events are logged with full context:
+
+[cols="1,2,2", options="header"]
+|===
+|Category |Events |Data Captured
+
+|Authentication
+|Login, logout, token refresh, failed login
+|User ID, IP, timestamp, user agent, result
+
+|User Management
+|Registration, profile update, password change
+|User ID, changed fields, admin (if applicable)
+
+|Token Operations
+|Mint, burn, balance query
+|User ID, amount, transaction ID, account ID
+
+|Redemption
+|Request, approval, rejection, completion
+|User ID, gift ID, approver, status change
+
+|Admin Actions
+|Admin creation, role change, system config
+|Admin ID, target, changes made
+
+|Data Access
+|Export, bulk query, report generation
+|User ID, data type, scope
+|===
+
+=== Audit Log Format
+
+[source,json]
+----
+{
+  "auditId": "audit-20251216-001234",
+  "timestamp": "2025-12-16T10:30:45.123Z",
+  "eventType": "TOKEN_MINT",
+  "actorId": "system-batch",
+  "actorType": "SYSTEM",
+  "targetId": "user-12345",
+  "targetType": "USER",
+  "action": "MINT",
+  "details": {
+    "amount": 150,
+    "hederaTxId": "0.0.1234@1702721445.123456789",
+    "previousBalance": 500,
+    "newBalance": 650,
+    "reason": "DAILY_POINTS"
+  },
+  "result": "SUCCESS",
+  "ipAddress": "10.0.1.50",
+  "correlationId": "batch-2025-12-16"
+}
+----
+
+== Metrics and Monitoring
+
+=== Prometheus Metrics
+
+==== Application Metrics
+
+[cols="1,2,2", options="header"]
+|===
+|Metric |Type |Description
+
+|`http_requests_total`
+|Counter
+|Total HTTP requests by endpoint, method, status
+
+|`http_request_duration_seconds`
+|Histogram
+|Request duration distribution
+
+|`active_users_total`
+|Gauge
+|Currently active user sessions
+
+|`token_operations_total`
+|Counter
+|Token mints and burns by type
+
+|`job_queue_size`
+|Gauge
+|Current job queue depth
+
+|`job_processing_duration_seconds`
+|Histogram
+|Job processing time
+|===
+
+==== Hedera-Specific Metrics
+
+[cols="1,2,2", options="header"]
+|===
+|Metric |Type |Description
+
+|`hedera_transactions_total`
+|Counter
+|Hedera transactions by type and result
+
+|`hedera_transaction_duration_seconds`
+|Histogram
+|Time from submission to consensus
+
+|`hedera_fee_hbar_total`
+|Counter
+|Total HBAR spent on fees
+
+|`hedera_account_balance_hbar`
+|Gauge
+|Operator account balance
+|===
+
+=== Grafana Dashboards
+
+[cols="1,3", options="header"]
+|===
+|Dashboard |Panels
+
+|System Overview
+|Request rate, error rate, latency percentiles, active connections
+
+|Hedera Operations
+|Transaction success rate, consensus time, fee tracking, daily volume
+
+|Business Metrics
+|Points calculated, tokens minted, redemptions processed, user growth
+
+|Infrastructure
+|CPU, memory, disk, network for all services
+
+|Database
+|Query performance, connection pool, table sizes
+|===
+
+== Alerting
+
+=== Alert Rules
+
+[cols="1,2,2,1", options="header"]
+|===
+|Alert |Condition |Severity |Response
+
+|High Error Rate
+|Error rate > 1% for 5 minutes
+|Critical
+|On-call page
+
+|API Latency
+|P95 > 2 seconds for 10 minutes
+|Warning
+|Slack notification
+
+|Hedera Failure
+|Transaction failures > 5% for 5 minutes
+|Critical
+|On-call page
+
+|Database Connection
+|Available connections < 10%
+|Critical
+|Auto-scale + page
+
+|Batch Job Delay
+|Daily job not complete by 8 AM
+|Warning
+|Slack notification
+
+|Low HBAR Balance
+|Operator balance < 100 HBAR
+|Warning
+|Email to finance
+
+|Security Event
+|> 10 failed logins from same IP
+|Warning
+|Security team alert
+|===
+
+=== Alert Channels
+
+[cols="1,2", options="header"]
+|===
+|Channel |Alert Types
+
+|PagerDuty/On-call
+|Critical production issues
+
+|Slack #alerts
+|Warnings, performance degradation
+
+|Email
+|Daily summaries, non-urgent issues
+
+|Security Team
+|Security-related events
+|===
+
+== Distributed Tracing
+
+=== Implementation
+
+* **Technology**: OpenTelemetry with Jaeger backend
+* **Trace Propagation**: W3C Trace Context headers
+* **Sampling**: 10% of requests in production, 100% for errors
+
+=== Trace Points
+
+[cols="1,2", options="header"]
+|===
+|Service |Instrumented Operations
+
+|API Gateway
+|All incoming requests
+
+|Backend Service
+|Database queries, Hedera calls, cache operations
+
+|Job Workers
+|Job processing, external calls
+
+|Database
+|Query execution time
+|===
+
+== Log Retention Policy
+
+[cols="1,2,2", options="header"]
+|===
+|Log Type |Hot Storage |Cold Storage
+
+|Audit Logs
+|90 days (Elasticsearch)
+|7 years (S3 Glacier)
+
+|Application Logs
+|30 days (Elasticsearch)
+|90 days (S3)
+
+|Security Logs
+|90 days (Elasticsearch)
+|1 year (S3)
+
+|Debug Logs
+|7 days (Elasticsearch)
+|Not retained
+
+|Metrics
+|30 days (Prometheus)
+|1 year (Thanos)
+|===

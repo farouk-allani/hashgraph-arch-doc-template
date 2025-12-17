@@ -1,0 +1,95 @@
+= ADR 005: Daily Batch Processing for Points Calculation and Token Minting
+
+*Status*: Accepted
+
+*Date*: December 2025
+
+*Context*:
+The platform needs to calculate loyalty points based on client activity data from Middle DB and mint corresponding tokens. Key considerations:
+
+* Middle DB is updated daily with J-1 (previous day) data
+* Thousands of clients need points calculated
+* Token minting has associated Hedera network fees
+* System should handle processing failures gracefully
+* Results need to be auditable
+
+Alternative approaches considered:
+
+1. **Real-time Processing**: Calculate and mint on each transaction
+2. **Hourly Batch**: Process every hour
+3. **Daily Batch**: Process once daily aligned with Middle DB refresh
+4. **Weekly Batch**: Aggregate and process weekly
+
+*Decision:*
+We will implement **daily batch processing** for points calculation and token minting.
+
+Processing schedule:
+
+* **Trigger**: Scheduled cron job at 2:00 AM (after Middle DB J-1 refresh)
+* **Data Extraction**: Read all client activity from Middle DB
+* **Points Calculation**: Apply business rules to compute daily points
+* **Token Minting**: Batch mint tokens to client accounts
+* **Completion Target**: Process complete by 6:00 AM
+
+*Rationale:*
+
+* **Data Alignment**: Matches Middle DB J-1 update cycle
+* **Cost Efficiency**: Batch minting reduces per-transaction overhead
+* **System Load**: Processing during off-peak hours
+* **Business Fit**: Daily points aligns with Enda Tamweel's operational model
+* **Error Handling**: Daily cycle allows time for retry and manual intervention
+
+*Implementation Details:*
+
+=== Job Queue Architecture
+
+[source]
+----
+Daily Sync Job
+├── Data Extraction (from Middle DB)
+├── Points Calculation (parallel workers)
+│   ├── Chunk 1 (100 clients)
+│   ├── Chunk 2 (100 clients)
+│   └── ... 
+├── Token Minting (batch operations)
+│   ├── Batch 1 (max 100 operations)
+│   ├── Batch 2 (max 100 operations)
+│   └── ...
+├── Reconciliation Check
+└── Summary Report
+----
+
+=== Checkpointing
+
+* Progress saved after each chunk
+* Failed jobs resume from last checkpoint
+* Maximum 3 automatic retries with exponential backoff
+
+=== Monitoring
+
+* Job start/completion alerts
+* Error rate monitoring
+* Processing time tracking
+* Automatic escalation if not complete by deadline
+
+*Consequences*:
+
+Positive:
+
+* Efficient use of Hedera network with batched operations
+* Clear processing window with defined completion time
+* Easy to monitor and troubleshoot
+* Aligns with existing data refresh cycles
+
+Negative:
+
+* Points not reflected in real-time (24-hour delay)
+* Large processing window if client base grows significantly
+* Failure affects all clients for that day
+
+== Related Requirements
+
+* <<../01_introduction_and_goals/02_requirements_overview.adoc#RE2, R2>> - Daily extraction from Middle DB
+* <<../01_introduction_and_goals/02_requirements_overview.adoc#RE3, R3>> - Rule-based points calculation
+* <<../01_introduction_and_goals/02_requirements_overview.adoc#RE4, R4>> - Automatic minting
+* <<../01_introduction_and_goals/03_quality_goals.adoc#Q4, Q4>> - Scalability

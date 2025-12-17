@@ -1,9 +1,312 @@
 = Performance Optimization
 
-[NOTE]
-====
-Add any performance enhancing design decisions. Here are a few examples
-- Caching layer implemented using Redis for frequently accessed data
-- Database query optimization and indexing
-- Asynchronous processing for non-critical operations
-====
+This section describes the performance optimization strategies implemented in the Enda Tamweel Loyalty Platform to ensure responsive user experience and efficient batch processing.
+
+== Batch Processing Architecture
+
+=== Daily Points Calculation
+
+The daily points calculation processes thousands of client records efficiently:
+
+[cols="1,3", options="header"]
+|===
+|Strategy |Implementation
+
+|Chunked Processing
+|Client records processed in chunks of 100 to prevent memory overflow
+
+|Parallel Calculation
+|Points calculation runs in parallel worker threads (4 workers default)
+
+|Database Batching
+|Bulk INSERT/UPDATE operations instead of individual queries
+
+|Progress Tracking
+|Checkpoint system to resume from failure point
+|===
+
+=== Token Minting Optimization
+
+[plantuml, format=png]
+----
+@startuml
+title Batch Minting Strategy
+
+start
+:Collect mint requests;
+:Group by transaction batch (max 100);
+
+while (More batches?) is (yes)
+    :Submit batch to Hedera;
+    :Wait for consensus;
+    :Update database records;
+    :Log batch completion;
+endwhile (no)
+
+:Generate daily summary;
+stop
+
+@enduml
+----
+
+Key optimizations:
+
+* **Batch Size**: Maximum 100 operations per Hedera transaction to balance throughput and fees
+* **Rate Limiting**: Controlled submission rate to avoid network throttling
+* **Retry Logic**: Exponential backoff for failed transactions (max 3 retries)
+* **Fee Optimization**: Transactions scheduled during lower-fee periods when possible
+
+== Caching Strategy
+
+=== Cache Layers
+
+[cols="1,2,2,2", options="header"]
+|===
+|Layer |Technology |TTL |Data Cached
+
+|Application Cache
+|In-memory (Node.js)
+|Request lifetime
+|Parsed tokens, config
+
+|Distributed Cache
+|Redis
+|Variable
+|Sessions, user data, gift catalog
+
+|Database Cache
+|PostgreSQL
+|Query plan cache
+|Frequent queries
+|===
+
+=== Redis Caching Implementation
+
+[cols="1,2,2", options="header"]
+|===
+|Cache Key Pattern |TTL |Purpose
+
+|`user:{id}:profile`
+|30 minutes
+|User profile data
+
+|`user:{id}:balance`
+|5 minutes
+|Cached token balance
+
+|`gifts:catalog`
+|1 hour
+|Gift catalog (all users)
+
+|`session:{id}`
+|7 days
+|Active session data
+
+|`rate:{ip}:{endpoint}`
+|1 minute
+|Rate limiting counters
+|===
+
+=== Cache Invalidation
+
+[cols="1,2", options="header"]
+|===
+|Event |Invalidation Action
+
+|Token mint/burn
+|Invalidate `user:{id}:balance`
+
+|Profile update
+|Invalidate `user:{id}:profile`
+
+|Gift catalog change
+|Invalidate `gifts:catalog`
+
+|Logout
+|Delete `session:{id}`
+|===
+
+== Database Optimization
+
+=== Indexing Strategy
+
+[cols="1,2,2", options="header"]
+|===
+|Table |Index |Purpose
+
+|users
+|`idx_users_username`
+|Login lookup
+
+|users
+|`idx_users_hedera_account`
+|Hedera account lookup
+
+|points_history
+|`idx_points_user_date`
+|Daily points query
+
+|redemptions
+|`idx_redemptions_status`
+|Pending redemptions query
+
+|audit_logs
+|`idx_audit_timestamp`
+|Time-based audit queries
+|===
+
+=== Query Optimization
+
+* **Pagination**: All list endpoints use cursor-based pagination
+* **Projection**: SELECT only required columns, avoid SELECT *
+* **Connection Pooling**: pgBouncer for connection management (max 100 connections)
+* **Read Replicas**: Read-heavy queries routed to replicas
+
+== API Response Optimization
+
+=== Response Time Targets
+
+[cols="1,2,2", options="header"]
+|===
+|Endpoint Category |P50 Target |P95 Target
+
+|Authentication
+|100ms
+|300ms
+
+|User Profile
+|50ms
+|150ms
+
+|Balance Query
+|100ms
+|250ms
+
+|Gift Catalog
+|50ms
+|100ms
+
+|Redemption Create
+|200ms
+|500ms
+|===
+
+=== Optimization Techniques
+
+* **Response Compression**: gzip compression for responses > 1KB
+* **JSON Serialization**: Fast JSON serializer (fastify-json)
+* **Connection Keep-Alive**: HTTP/2 with connection reuse
+* **Early Response**: Return success immediately, process async when possible
+
+== Asynchronous Processing
+
+=== Job Queue Architecture
+
+[plantuml, format=png]
+----
+@startuml
+title Job Queue Architecture
+
+rectangle "API Servers" as api
+queue "Redis Queue" as queue
+rectangle "Worker Pool" as workers
+database "PostgreSQL" as db
+cloud "Hedera" as hedera
+
+api --> queue : Enqueue jobs
+queue --> workers : Dequeue jobs
+workers --> db : Update records
+workers --> hedera : Token operations
+workers --> queue : Retry failed jobs
+
+@enduml
+----
+
+=== Job Types and Priorities
+
+[cols="1,1,2,2", options="header"]
+|===
+|Job Type |Priority |Timeout |Retry Policy
+
+|Daily Sync
+|High
+|2 hours
+|3 retries, exponential backoff
+
+|Points Calculation
+|High
+|1 hour
+|3 retries
+
+|Token Minting
+|Medium
+|30 minutes
+|5 retries, exponential backoff
+
+|Balance Reconciliation
+|Low
+|1 hour
+|2 retries
+
+|Notification
+|Low
+|5 minutes
+|1 retry
+|===
+
+== Hedera Network Optimization
+
+=== Transaction Efficiency
+
+* **Account Consolidation**: Platform uses single operator account for all mint/burn operations
+* **Auto Token Association**: Tokens auto-associated during account creation
+* **Transaction Batching**: Multiple operations combined where possible
+* **Testnet vs Mainnet**: Development uses testnet to minimize costs
+
+=== Network Monitoring
+
+[cols="1,2", options="header"]
+|===
+|Metric |Threshold
+
+|Transaction success rate
+|>99%
+
+|Average consensus time
+|<5 seconds
+
+|Daily transaction count
+|Monitor for anomalies
+
+|Fee spend (HBAR)
+|Budget alerting
+|===
+
+== Performance Monitoring
+
+=== Key Performance Indicators (KPIs)
+
+[cols="1,2,2", options="header"]
+|===
+|KPI |Target |Alert Threshold
+
+|API Response Time (P95)
+|<500ms
+|>1000ms
+
+|Daily Batch Completion
+|<4 hours
+|>6 hours
+
+|Database Query Time (P95)
+|<100ms
+|>500ms
+
+|Cache Hit Rate
+|>90%
+|<80%
+
+|Error Rate
+|<0.1%
+|>1%
+|===

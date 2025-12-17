@@ -1,10 +1,9 @@
 = Container View
 
 == Overview
-[NOTE]
-====
-This diagram shows the single container images and their interactions as they are used by the System under Development.
-====
+
+This diagram shows the container images and their interactions within the Enda Tamweel Loyalty Tokenization Platform.
+
 // tag::developer[]
 == Container Diagram
 [plantuml, format=png]
@@ -14,57 +13,103 @@ This diagram shows the single container images and their interactions as they ar
 
 LAYOUT_WITH_LEGEND()
 
-title Container diagram for the Application
+title Container diagram for Enda Tamweel Loyalty Platform
 
-Person_Ext(technicalUser, "User who is not managed by Application", "Long description of what the user will try to achieve with the Application")
+Enterprise_Boundary(c0, "Enda Tamweel") {
+Person(client, "Client", "Views balance, redeems gifts")
+Person(admin, "Admin", "Manages gifts, approves redemptions")
+Person(superadmin, "Super Admin", "Manages admins, views audit logs")
 
-Enterprise_Boundary(c0, "THA") {
-Person(customer, "Customer", "A customer of THA that wants to use the Application and do some awesome stuff with it")
-Person(admin, "Admin", "A THA employee that serves as an admin and onboards customers.")
-
-System_Boundary(application, "Application") {
-    Container(webApp, "Web Application", "JavaScript, React", "Provides all functionality to customers via their web browser")
-    Container(apiGateway, "API Gateway", "Node.js, Express", "Handles API requests and routes them to appropriate microservices")
-    Container(customerService, "Customer Service", "Java, Spring Boot", "Manages customer data and onboarding process")
-    Container(transactionService, "Transaction Service", "Go", "Handles creation and processing of transactions")
-    Container(database, "Database", "PostgreSQL", "Stores customer data, transaction history, and application state")
+System_Boundary(application, "Loyalty Platform") {
+    Container(webApp, "Web Application", "React", "Web interface for clients, admins, and super admins")
+    Container(mobileApp, "Mobile Application", "React Native", "Native mobile app for iOS and Android")
+    Container(backend, "Backend Service", "NestJS", "Core API handling points calculation, token operations, and user management")
+    Container(jobQueue, "Job Queue", "Bull/Redis", "Asynchronous processing for daily batch operations")
+    ContainerDb(appDb, "Application Database", "PostgreSQL", "Stores users, points history, redemptions, and admin data")
 }
 
-System_Ext(vault, "Hashicorp Vault", "The KMS of choice that holds the secrets of the application and can sign messages with private keys")
-
+System_Ext(middleDb, "Middle DB", "Consolidated T24/Works data, updated daily J-1")
 }
-System_Ext(node, "Hedera Hashgraph Node", "Gateway to the Hedera network")
-System_Ext(hedera, "Hedera Hashgraph", "Distributed ledger for building decentralized applications")
-Rel(admin, webApp, "Uses to onboard new customers", "HTTPS")
-Rel(customer, webApp, "Uses for visualized information", "HTTPS")
-Rel(technicalUser, apiGateway, "Sends REST requests", "HTTPS")
-Rel(webApp, apiGateway, "Makes API calls to", "JSON/HTTPS")
-Rel(apiGateway, customerService, "Routes customer-related requests to", "JSON/HTTPS")
-Rel(apiGateway, transactionService, "Routes transaction-related requests to", "JSON/HTTPS")
-Rel(customerService, database, "Reads from and writes to", "SQL/TCP")
-Rel(transactionService, database, "Reads from and writes to", "SQL/TCP")
-Rel(transactionService, vault, "Requests to sign transaction payload", "HTTPS")
-Rel(vault, transactionService, "Returns signed transaction payload", "HTTPS")
-Rel(transactionService, node, "Submits signed transaction", "gRPC")
-Rel(node, hedera, "Broadcasts transaction", "Proprietary protocol")
+
+System_Ext(hedera, "Hedera Network", "HTS token management, account creation")
+
+Rel(client, webApp, "Uses", "HTTPS")
+Rel(client, mobileApp, "Uses", "HTTPS")
+Rel(admin, webApp, "Uses", "HTTPS")
+Rel(superadmin, webApp, "Uses", "HTTPS")
+Rel(webApp, backend, "REST API calls", "JSON/HTTPS")
+Rel(mobileApp, backend, "REST API calls", "JSON/HTTPS")
+Rel(backend, appDb, "Reads/Writes", "SQL/TCP")
+Rel(backend, jobQueue, "Queues jobs", "Redis protocol")
+Rel(jobQueue, backend, "Triggers batch processing")
+Rel(backend, middleDb, "Reads client data", "SQL/TCP (read-only)")
+Rel(backend, hedera, "Account creation, mint/burn tokens", "Hedera SDK")
+
 @enduml
 
 ----
 
-== Description of Modules and Components
+// end::developer[]
+
+== Description of Containers
 
 === Web Application
 
-[NOTE]
-Describe the design choices made for the web application. Framework (e.g. React, Angular) and other technical decisions. The features of the application are described elsewhere.
+Built with React, the web application provides:
 
-=== API Gateway
+* Responsive design for desktop and tablet browsers
+* Role-based dashboards (Client, Admin, Super Admin)
+* Real-time balance display
+* Gift catalog and redemption workflow
+* Admin management interface for Super Admins
 
-[NOTE]
-Describe how the Web App interacts with the gateway, what the security or trust parameters are and other design choices.
+Key design choices:
 
-=== Other components
+* JWT access tokens stored in memory only (not localStorage) to prevent XSS attacks
+* Refresh tokens handled via HTTP-only secure cookies
+* Modern React patterns with hooks and context
 
-[NOTE]
-Describe why the components are required (e.g. Hexagonal architecture mandates separation of function and persistence) and what their main function is.
-// end::developer[]
+=== Mobile Application
+
+Built with React Native for cross-platform deployment:
+
+* Native iOS and Android applications
+* Shared codebase with platform-specific optimizations
+* Push notifications for redemption status updates
+* Offline-capable balance caching
+
+=== Backend Service
+
+The core NestJS application responsible for:
+
+* **User Management**: Registration, authentication, Hedera wallet creation
+* **Points Engine**: Daily calculation based on Middle DB data
+* **Token Operations**: Minting loyalty tokens to user accounts, burning on redemption
+* **Gift Management**: Catalog CRUD, redemption workflow
+* **Admin Management**: Admin lifecycle for Super Admins
+
+Key design choices:
+
+* Modular NestJS architecture for separation of concerns
+* Hedera SDK integration for all blockchain operations
+* Encrypted private key storage for user wallets
+* Comprehensive audit logging
+
+=== Job Queue
+
+Asynchronous job processing using Bull with Redis:
+
+* Daily scheduled jobs for Middle DB data extraction
+* Batch points calculation processing
+* Batch token minting operations
+* Retry logic for failed Hedera transactions
+
+=== Application Database
+
+PostgreSQL database storing:
+
+* User accounts and encrypted wallet credentials
+* Points calculation history (daily snapshots and cumulative values)
+* Gift catalog and redemption requests
+* Admin and Super Admin accounts
+* Audit logs for all significant operations

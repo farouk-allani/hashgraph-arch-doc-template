@@ -5,17 +5,36 @@
 [NOTE]
 ====
 This section outlines high-level technical requirements. Each entry represents a key capability of the system. Update this section as new high-level requirements emerge or existing ones change significantly.
-Most of these requirements will probably be from an ADR so there is an example on how to include one with proper formatting
 ====
 ////
+
+== Functional Requirements
 
 [cols="1,8", id=requirements, options="header"]
 |===
 |ID | Requirement
-|[[RE1]]R1 | The system shall use Web3 Auth for authentication
-|[[RE2]]R2 | Hedera Smart Contract Service will be used for smart-contract deployments
-|[[RE3]]R3 a|
-include::../04_architecture_decisions/adr-001-my-project.adoc[]
+
+|[[RE1]]R1 | Automatic Hedera wallet creation upon client registration with secure private key storage
+|[[RE2]]R2 | Daily extraction of client activity data from Middle DB (J-1 refresh cycle)
+|[[RE3]]R3 | Rule-based points calculation engine processing Middle DB data
+|[[RE4]]R4 | Automatic minting of HTS loyalty tokens based on calculated points
+|[[RE5]]R5 | Gift redemption workflow with Admin approval and token burning
+|[[RE6]]R6 | Super Admin panel for Admin lifecycle management
+|[[RE7]]R7 | JWT-based authentication with refresh token rotation
+|[[RE8]]R8 | Regular reconciliation between database and on-chain token balances
+|[[RE9]]R9 | Storage of historical point calculations and redemption logs
+|[[RE10]]R10 | Web and Mobile application interfaces for clients and administrators
+|===
+
+== Integration Requirements
+
+[cols="1,8", id=integration-requirements, options="header"]
+|===
+|ID | Requirement
+
+|[[IR1]]IR1 | Integration with Enda Tamweel's Middle DB (consolidated T24 and Works data)
+|[[IR2]]IR2 | Integration with Hedera Token Service (HTS) for token management
+|[[IR3]]IR3 | Hedera Account Service for wallet creation and management
 |===
 
 // end::architect[]

@@ -4,10 +4,12 @@
 |===
 |Role |Contact |Expectations
 
-|CFO |First Lastname |Viable pricing model and revenue generation
-|Head of Engineering |First Lastname  |Technical feasibility and performance
-|Product Owner |First Lastname  |Feature completeness and user satisfaction
-|Project Manager |First Lastname  |On-time delivery within budget
-|Tech Lead |First Lastname  |Code quality and technical implementation
-|Architect |First Lastname  |System design and architectural decisions
+|Enda Tamweel Management |Enda Tamweel Team |Successful loyalty program that increases client engagement and retention
+|Product Owner |Dar Blockchain Team |Feature completeness and seamless integration with existing T24/Works systems
+|Project Manager |Dar Blockchain Team |On-time delivery within budget with clear milestone tracking
+|Tech Lead |Dar Blockchain Team |Code quality, Hedera integration, and technical implementation
+|Backend Developers |Dar Blockchain Team |Clear API specifications and maintainable codebase
+|Frontend Developers |Dar Blockchain Team |Intuitive UI/UX for clients and administrators
+|System Administrators |Enda Tamweel IT |Easy deployment, monitoring, and maintenance
+|Clients (End Users) |Enda Tamweel Customers |Easy access to loyalty points, transparent balance tracking, and simple gift redemption
 |===

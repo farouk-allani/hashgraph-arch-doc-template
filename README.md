@@ -1,19 +1,25 @@
 
-# Architecture documentation template
+# Enda Tamweel HTS-Based Loyalty Tokenization Platform - Architecture Documentation
 
-This template repo is meant to be used as a basis for writing architecture documentation. You can follow these steps to add the documentation to your repo:
+## Project Overview
 
-In the root folder of your repo
+This repository contains the comprehensive architecture documentation for the **Enda Tamweel Loyalty Tokenization Platform**, a loyalty and client fidelization system built on Hedera Hashgraph's Token Service (HTS).
 
-```shell
-git clone git@github.com:Swiss-Digital-Assets-Institute/hashgraph-arch-doc-template.git docs
-rm -rf docs/.git
-cd docs
-git add .
-git commit -m "documentation template"
-```
+### Key Features
 
-## The above section can be deleted after the merge
+- **Hedera Token Service Integration**: Loyalty points tokenized as mintable/burnable HTS tokens
+- **Daily Points Calculation**: Automated processing of client activity data from Middle DB
+- **Secure Wallet Management**: Custodial Hedera accounts with encrypted private key storage
+- **Gift Redemption Workflow**: Admin-approved redemptions with token burning
+- **Multi-tier Access Control**: Client, Admin, and Super Admin roles
+
+### Technology Stack
+
+- **Backend**: NestJS (TypeScript)
+- **Frontend**: React (Web), React Native (Mobile)
+- **Database**: PostgreSQL
+- **Cache/Queue**: Redis with Bull
+- **Blockchain**: Hedera Hashgraph (HTS)
 
 ---
 
@@ -21,7 +27,7 @@ git commit -m "documentation template"
 
 ## Overview
 
-This repository contains the architecture documentation for the Managed Transaction gateway. The documentation is written in AsciiDoc and can be converted to HTML or PDF using Docker and docker-compose.
+This repository contains the architecture documentation for the **Enda Tamweel HTS-Based Loyalty Tokenization Platform**. The documentation is written in AsciiDoc and follows the Hedera architecture documentation template structure.
 
 ## Documentation Structure
 

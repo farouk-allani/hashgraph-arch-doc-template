@@ -1,11 +1,293 @@
 = Testing Levels
 
-[NOTE]
-====
-Add any security related decisions. Here are a few examples
+This section describes the different levels of testing implemented for the Enda Tamweel Loyalty Platform.
 
-- All external communication is encrypted using TLS 1.3
-- API authentication uses OAuth 2.0 with JWT tokens
-- Sensitive data in the database is encrypted at rest
-- Regular security audits and penetration testing are conducted
-====
+== Unit Testing
+
+=== Scope
+Individual functions, methods, and classes in isolation.
+
+=== Tools
+* **Framework**: Jest
+* **Mocking**: jest-mock, ts-mockito
+* **Coverage**: Istanbul/nyc
+
+=== Coverage Targets
+
+[cols="1,2,2", options="header"]
+|===
+|Module |Minimum Coverage |Priority
+
+|Points Engine
+|90%
+|Critical - core business logic
+
+|Auth Module
+|85%
+|Critical - security
+
+|Token Module
+|80%
+|High - Hedera operations
+
+|Gift Module
+|80%
+|High - business workflow
+
+|API Controllers
+|70%
+|Medium
+|===
+
+=== Unit Test Examples
+
+[cols="1,3", options="header"]
+|===
+|Component |Test Cases
+
+|Points Calculator
+|Points calculation rules, edge cases, error handling
+
+|JWT Service
+|Token generation, validation, expiry handling
+
+|Wallet Service
+|Key encryption/decryption, account creation
+
+|Redemption Service
+|Request validation, status transitions
+|===
+
+== Integration Testing
+
+=== Scope
+Interaction between modules and external dependencies.
+
+=== Tools
+* **Framework**: Jest with supertest
+* **Database**: Testcontainers (PostgreSQL)
+* **Hedera**: Hedera Testnet
+* **Redis**: Testcontainers (Redis)
+
+=== Integration Test Scenarios
+
+[cols="1,3", options="header"]
+|===
+|Scenario |Validations
+
+|User Registration Flow
+|Database record created, Hedera account created, wallet encrypted
+
+|Authentication Flow
+|Login creates session, refresh rotates tokens, logout invalidates
+
+|Points Calculation
+|Middle DB data processed, database updated, tokens minted
+
+|Gift Redemption
+|Request persisted, approval triggers burn, balance updated
+|===
+
+=== External System Integration
+
+[cols="1,2,2", options="header"]
+|===
+|System |Test Approach |Environment
+
+|PostgreSQL
+|Testcontainers with schema migration
+|Isolated container
+
+|Redis
+|Testcontainers
+|Isolated container
+
+|Hedera Network
+|Hedera Testnet with test accounts
+|Public testnet
+
+|Middle DB
+|Mock data or staging replica
+|Mock/Staging
+|===
+
+== End-to-End (E2E) Testing
+
+=== Scope
+Complete user journeys through the entire system.
+
+=== Tools
+* **Web**: Playwright
+* **Mobile**: Detox (React Native)
+* **API**: Postman/Newman
+
+=== E2E Test Scenarios
+
+==== Client Journey
+
+[cols="1,3", options="header"]
+|===
+|Test Case |Steps
+
+|New Client Onboarding
+|Register → Verify account created → View initial balance (0)
+
+|Check Balance
+|Login → Navigate to dashboard → Verify balance matches expected
+
+|Request Gift Redemption
+|Login → Browse gifts → Select gift → Submit request → Verify pending status
+
+|View Transaction History
+|Login → Navigate to history → Verify past transactions displayed
+|===
+
+==== Admin Journey
+
+[cols="1,3", options="header"]
+|===
+|Test Case |Steps
+
+|Approve Redemption
+|Login as Admin → View pending → Approve → Verify tokens burned
+
+|Reject Redemption
+|Login as Admin → View pending → Reject with reason → Verify status
+
+|Manage Gift Catalog
+|Login as Admin → Add gift → Edit gift → Verify updates
+|===
+
+==== Super Admin Journey
+
+[cols="1,3", options="header"]
+|===
+|Test Case |Steps
+
+|Manage Admins
+|Login as Super Admin → Create admin → Modify permissions → Deactivate
+
+|View Audit Logs
+|Login as Super Admin → Navigate to audit → Filter by date/action
+|===
+
+== API Contract Testing
+
+=== Scope
+Validate API contracts and backward compatibility.
+
+=== Tools
+* **Contract Definition**: OpenAPI 3.0
+* **Contract Testing**: Dredd, Pact
+
+=== API Tests
+
+[cols="1,2,2", options="header"]
+|===
+|Endpoint |Method |Validations
+
+|/auth/login
+|POST
+|Request/response schema, error codes
+
+|/users/me
+|GET
+|Authentication required, response structure
+
+|/balance
+|GET
+|Correct balance returned, caching behavior
+
+|/redemptions
+|POST
+|Validation errors, success response
+|===
+
+== Performance Testing
+
+=== Tools
+* **Load Testing**: k6, JMeter
+* **Profiling**: clinic.js, 0x
+
+=== Performance Test Scenarios
+
+[cols="1,2,2,2", options="header"]
+|===
+|Scenario |Users |Duration |Success Criteria
+
+|Normal Load
+|100 concurrent
+|30 minutes
+|P95 < 500ms, 0% errors
+
+|Peak Load
+|500 concurrent
+|15 minutes
+|P95 < 1000ms, < 0.1% errors
+
+|Batch Processing
+|10,000 records
+|Single run
+|Complete < 4 hours
+
+|Stress Test
+|1000 concurrent
+|5 minutes
+|Graceful degradation
+|===
+
+== Security Testing
+
+=== Tools
+* **SAST**: SonarQube, Semgrep
+* **DAST**: OWASP ZAP
+* **Dependency Scan**: Snyk, npm audit
+
+=== Security Test Areas
+
+[cols="1,3", options="header"]
+|===
+|Area |Tests
+
+|Authentication
+|Brute force protection, session management, token validation
+
+|Authorization
+|Role enforcement, privilege escalation attempts
+
+|Input Validation
+|SQL injection, XSS, command injection
+
+|API Security
+|Rate limiting, CORS, security headers
+
+|Data Protection
+|Encryption validation, key management
+|===
+
+== Test Environment Strategy
+
+[cols="1,2,2,2", options="header"]
+|===
+|Environment |Purpose |Data |Hedera Network
+
+|Local
+|Developer testing
+|Mock/seed data
+|Testnet or Mock
+
+|CI/CD
+|Automated tests
+|Generated test data
+|Testnet
+
+|Staging
+|Integration & E2E
+|Anonymized production
+|Testnet
+
+|Pre-Production
+|Final validation
+|Production replica
+|Testnet
+|===

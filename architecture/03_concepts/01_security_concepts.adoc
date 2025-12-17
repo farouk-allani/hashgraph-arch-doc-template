@@ -1,11 +1,233 @@
 = Security Concept
 
-[NOTE]
-====
-Add any security related decisions. Here are a few examples
+This section describes the security architecture and controls implemented in the Enda Tamweel Loyalty Platform to protect user data, credentials, and token operations.
 
-- All external communication is encrypted using TLS 1.3
-- API authentication uses OAuth 2.0 with JWT tokens
-- Sensitive data in the database is encrypted at rest
-- Regular security audits and penetration testing are conducted
-====
+== Authentication Architecture
+
+=== JWT Token Strategy
+
+The platform implements a dual-token authentication strategy to balance security with user experience:
+
+[cols="1,2,3", options="header"]
+|===
+|Token Type |Characteristics |Storage
+
+|Access Token
+|Short-lived (15 minutes), contains user ID, role, username
+|Frontend memory only (never localStorage/sessionStorage)
+
+|Refresh Token
+|Long-lived (7 days), bound to specific session
+|HTTP-only, Secure cookie (inaccessible to JavaScript)
+|===
+
+=== Token Security Measures
+
+* **Access Token in Memory**: Stored only in frontend application memory to prevent XSS attacks. Token is lost when page closes, requiring re-authentication or refresh.
+
+* **Refresh Token Rotation**: Each refresh request generates a new refresh token pair:
+  1. Backend validates the existing refresh token
+  2. Old refresh token is invalidated in database
+  3. New refresh token and access token issued
+  4. New refresh token sent as HTTP-only cookie
+
+* **Refresh Token Hashing**: Refresh tokens are hashed (bcrypt) before storage in the database. Even if the database is compromised, tokens cannot be used directly.
+
+=== Session Management
+
+[plantuml, format=png]
+----
+@startuml
+title Session Security Model
+
+state "Authenticated" as auth {
+    state "Active Session" as active
+    state "Token Refresh" as refresh
+    state "Session Expired" as expired
+    
+    active --> refresh : Access token expires
+    refresh --> active : Valid refresh token
+    refresh --> expired : Invalid refresh token
+}
+
+state "Unauthenticated" as unauth
+
+[*] --> unauth
+unauth --> auth : Login success
+auth --> unauth : Logout
+expired --> unauth : Redirect to login
+
+@enduml
+----
+
+== Hedera Wallet Security
+
+=== Private Key Protection
+
+Client Hedera private keys require special security handling:
+
+[cols="1,3", options="header"]
+|===
+|Control |Implementation
+
+|Encryption at Rest
+|Private keys encrypted using AES-256-GCM before database storage
+
+|Key Derivation
+|Encryption keys derived using PBKDF2 with unique salts per user
+
+|Access Control
+|Private keys decrypted only during token operations, never exposed via API
+
+|Memory Handling
+|Keys cleared from memory immediately after use
+
+|Backup Security
+|Database backups encrypted; keys stored separately from encrypted data
+|===
+
+=== Token Operation Authorization
+
+[cols="1,2", options="header"]
+|===
+|Operation |Authorization
+
+|Mint Tokens
+|Platform admin key only (backend-controlled)
+
+|Burn Tokens
+|Platform admin key + verified redemption approval
+
+|View Balance
+|Authenticated user (own balance) or Admin (any user)
+
+|Transfer
+|Disabled - tokens are non-transferable between users
+|===
+
+== API Security
+
+=== Transport Security
+
+* All external communication encrypted using **TLS 1.3**
+* HSTS (HTTP Strict Transport Security) enabled
+* Certificate pinning for mobile applications
+* Internal service-to-service communication within Kubernetes uses mTLS
+
+=== Request Authentication
+
+[cols="1,3", options="header"]
+|===
+|Endpoint Type |Authentication Method
+
+|Public
+|None (login, registration, public info)
+
+|Protected
+|Bearer token (JWT access token) in Authorization header
+
+|Admin
+|Bearer token + role verification (Admin or Super Admin)
+
+|Internal
+|Service mesh authentication (mTLS)
+|===
+
+=== Rate Limiting
+
+[cols="1,2,2", options="header"]
+|===
+|Endpoint Category |Rate Limit |Window
+
+|Authentication
+|5 requests
+|1 minute
+
+|Token Refresh
+|10 requests
+|1 minute
+
+|API General
+|100 requests
+|1 minute
+
+|Admin Operations
+|50 requests
+|1 minute
+|===
+
+== Role-Based Access Control (RBAC)
+
+=== Role Hierarchy
+
+[plantuml, format=png]
+----
+@startuml
+title Role Hierarchy
+
+rectangle "Super Admin" as superadmin {
+    rectangle "Admin" as admin {
+        rectangle "Client" as client
+    }
+}
+
+note right of superadmin : Manage admins, audit logs, system config
+note right of admin : Manage gifts, approve redemptions
+note right of client : View balance, redeem gifts
+
+@enduml
+----
+
+=== Permission Matrix
+
+[cols="1,1,1,1", options="header"]
+|===
+|Feature |Client |Admin |Super Admin
+
+|View Own Balance |✓ |✓ |✓
+|Request Redemption |✓ |✓ |✓
+|View Gift Catalog |✓ |✓ |✓
+|Approve Redemptions |✗ |✓ |✓
+|Manage Gift Catalog |✗ |✓ |✓
+|View All Users |✗ |✓ |✓
+|Manage Admin Accounts |✗ |✗ |✓
+|View Audit Logs |✗ |✗ |✓
+|System Configuration |✗ |✗ |✓
+|===
+
+== Security Monitoring
+
+=== Audit Events
+
+All security-relevant events are logged:
+
+* Authentication events (login, logout, failed attempts)
+* Token refresh events
+* Role changes
+* Admin account modifications
+* Token mint/burn operations
+* Redemption approvals/rejections
+* Permission denied attempts
+
+=== Security Alerts
+
+Automated alerts for:
+
+* Multiple failed login attempts (>5 in 10 minutes)
+* Unusual token refresh patterns
+* Admin actions outside business hours
+* Large token operations (burn > threshold)
+* Database access anomalies
+
+== Cookie Security Settings
+
+[cols="1,2", options="header"]
+|===
+|Attribute |Value
+
+|HttpOnly |true (prevents JavaScript access)
+|Secure |true (HTTPS only)
+|SameSite |Strict (CSRF protection)
+|Path |/api/auth (restricted scope)
+|Max-Age |604800 (7 days)
+|===

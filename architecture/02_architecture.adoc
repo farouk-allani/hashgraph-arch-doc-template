@@ -8,25 +8,30 @@ List key constraints that influence architectural decisions. Keep this list upda
 // tag::architect[]
 == Technical Constraints
 
-- Must integrate with Hedera network
-- Must comply with financial regulations and data protection laws
-- Must support multiple wallet types (Signing, Execution, Refill, Cold)
-- Must implement API key-based authentication
+- Must integrate with Hedera Token Service (HTS) for token minting and burning
+- Must integrate with Enda Tamweel's existing Middle DB (read-only access)
+- Must support secure storage of client Hedera private keys
+- Must implement JWT-based authentication with secure refresh token handling
+- Daily batch processing must align with Middle DB J-1 update cycle
+- Token operations must be performed by platform-controlled admin keys only
 // end::architect[]
 
 // tag::manager[]
 == Organizational Constraints
-- Development team is distributed across multiple time zones
-- Must align with company's existing DevOps practices
-- Limited budget and timeline for initial release
+- Integration with existing Enda Tamweel T24 and Works systems
+- Must align with Enda Tamweel's security and compliance requirements
+- Development by Dar Blockchain Team with defined delivery timeline
+- Points cannot be used externally - closed ecosystem
 // end::manager[]
 
 // tag::developer[]
 == Conventions
-- Use of microservices architecture
-- Containerization of all services
-- Adherence to RESTful API design principles
-- Comprehensive unit and integration testing
+- Backend developed using NestJS framework
+- Frontend using React (Web) and React Native (Mobile)
+- PostgreSQL for application database
+- RESTful API design principles
+- Comprehensive logging and audit trails
+- Asynchronous job processing for batch operations
 // end::developer[]
 
 [NOTE]

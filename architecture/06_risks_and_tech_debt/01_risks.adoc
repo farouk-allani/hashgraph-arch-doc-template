@@ -1,24 +1,105 @@
 = Risks
 
-////
-[NOTE]
-risks, impact assessment and remediation list. There will be a Project Risk list which will be kept by the PM, probably in Confluence. These risks are only the ones impacting code and which can be remediated by the development team or have a direct impact on the development team
-////
+The following risks represent potential future uncertainties that may impact the Enda Tamweel Loyalty Platform if not addressed:
 
-The following risks represent potential future uncertainties that may impact the system if not addressed:
-
-[cols="1,1,4,4", id=Risks, options="header"]
+[cols="1,1,4,4,2", id=Risks, options="header"]
 |===
-|ID |Severity |Description |Remediation
+|ID |Severity |Description |Remediation |Status
+
 |[[RI1]]R1
 |High
-|The expected performance might make the system fail commercially
-|Conduct research early on to find an efficient solution
+|Hedera network outage or degradation could prevent token operations (minting, burning, balance queries)
+|Implement circuit breaker pattern; queue failed operations for retry; maintain cached balances in database; monitor Hedera network status
+|Monitoring in place
 
 |[[RI2]]R2
-|Low
-|Users might lose their keys and not be able to login
-|Integrate with a recovery tool such as link:https://derecalliance.org/[DeRec]
+|High
+|Private key compromise could allow unauthorized token operations
+|Keys encrypted with AES-256 and stored in KMS; strict access controls; regular security audits; key rotation procedures
+|Mitigated
 
+|[[RI3]]R3
+|Medium
+|Middle DB integration failure could halt daily points calculation
+|Implement retry logic; manual trigger capability; alerting for sync failures; fallback to previous day's data if critical
+|Monitoring in place
+
+|[[RI4]]R4
+|Medium
+|Rapid user growth exceeds batch processing capacity
+|Horizontal scaling of worker pods; chunked processing; performance monitoring; capacity planning reviews
+|Planned
+
+|[[RI5]]R5
+|Medium
+|Database discrepancy between application DB and on-chain token balances
+|Daily reconciliation job; automated alerts for discrepancies; manual review process; audit logging
+|Implemented
+
+|[[RI6]]R6
+|Low
+|Users lose access to accounts and cannot recover
+|Standard password reset flow; admin-assisted account recovery; no user-held keys to lose (custodial model)
+|Mitigated by design
+
+|[[RI7]]R7
+|Medium
+|HBAR price volatility affects operational costs
+|Budget buffer for fee fluctuations; batch operations to minimize transactions; monitor daily costs; alert on budget threshold
+|Monitoring in place
+
+|[[RI8]]R8
+|High
+|Data breach exposing user personal information or encrypted keys
+|Encryption at rest and in transit; WAF and DDoS protection; incident response plan; regular penetration testing
+|Security measures active
+
+|[[RI9]]R9
+|Medium
+|Regulatory changes affecting blockchain token operations in Tunisia
+|Monitor regulatory landscape; design for flexibility; maintain compliance documentation; legal review of operations
+|Under monitoring
+
+|[[RI10]]R10
+|Low
+|Third-party dependency vulnerabilities (npm packages, SDKs)
+|Automated vulnerability scanning (Snyk); regular dependency updates; security-focused code reviews
+|CI/CD integrated
 |===
-// end::developer[]
+
+== Risk Matrix
+
+[cols="1,1,1,1", options="header"]
+|===
+|  |Low Impact |Medium Impact |High Impact
+
+|High Likelihood
+|
+|R4, R7
+|R1, R8
+
+|Medium Likelihood
+|R10
+|R3, R5, R9
+|R2
+
+|Low Likelihood
+|R6
+|
+|
+|===
+
+== Risk Monitoring
+
+=== Automated Monitoring
+
+* Hedera network status integration
+* Database reconciliation alerts
+* Security vulnerability scanning
+* Cost tracking and budget alerts
+
+=== Regular Reviews
+
+* Weekly: Operational risks review
+* Monthly: Security posture assessment
+* Quarterly: Full risk register review
